@@ -12,7 +12,7 @@ contract GameUpgradeable is
 {
     string private constant SIGNING_DOMAIN = "MetaNFT-Voucher";
     string private constant SIGNATURE_VERSION = "1";
-    mapping(address => mapping(string => bool)) private _usedNonce;
+    mapping(string => bool) private _usedNonce;
 
     struct WithdrawVoucher {
         address withdrawer;
@@ -86,8 +86,8 @@ contract GameUpgradeable is
 
     function withdrawToken(WithdrawTokenVoucher calldata voucher) public {
         // make sure nonce is not used (tx is not used)
-        require(!_usedNonce[_msgSender()][voucher.nonce], "Nonce has used");
-        _usedNonce[_msgSender()][voucher.nonce] = true;
+        require(!_usedNonce[voucher.nonce], "Nonce has used");
+        _usedNonce[voucher.nonce] = true;
 
         // make sure signature is valid and get the address of the signer
         address signer = _verifyWithdrawToken(voucher);
@@ -117,8 +117,8 @@ contract GameUpgradeable is
 
     function withdrawNFT(WithdrawVoucher calldata voucher) public {
         // make sure nonce is not used (tx is not used)
-        require(!_usedNonce[_msgSender()][voucher.nonce], "Nonce has used");
-        _usedNonce[_msgSender()][voucher.nonce] = true;
+        require(!_usedNonce[voucher.nonce], "Nonce has used");
+        _usedNonce[voucher.nonce] = true;
 
         // make sure signature is valid and get the address of the signer
         address signer = _verify(voucher);
