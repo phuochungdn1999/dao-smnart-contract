@@ -5,12 +5,8 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
-contract GameUpgradeable is
-    Initializable,
-    OwnableUpgradeable,
-    EIP712Upgradeable
-{
-    string private constant SIGNING_DOMAIN = "MetaNFT-Voucher";
+contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
+    string private constant SIGNING_DOMAIN = "NFT-Voucher";
     string private constant SIGNATURE_VERSION = "1";
     mapping(address => mapping(string => bool)) private _usedNonce;
 
@@ -70,17 +66,11 @@ contract GameUpgradeable is
 
     function depositToken(address token, uint256 amount) public {
         require(amount > 0, "Amount must greater than zero");
-        uint256 fee = (amount * 100) / 1000;
-
-        IERC20Upgradeable(token).transferFrom(_msgSender(), owner(), fee);
-        unchecked {
-            IERC20Upgradeable(token).transferFrom(
-                _msgSender(),
-                address(this),
-                amount - fee
-            );
-        }
-
+        IERC20Upgradeable(token).transferFrom(
+            _msgSender(),
+            address(this),
+            amount
+        );
         emit DepositToken(_msgSender(), token, amount, uint64(block.timestamp));
     }
 
