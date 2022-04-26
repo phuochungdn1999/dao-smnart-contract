@@ -11,7 +11,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 contract MarketplaceUpgradeable is
-    Initializable,
     OwnableUpgradeable,
     EIP712Upgradeable,
     ReentrancyGuardUpgradeable
@@ -54,8 +53,6 @@ contract MarketplaceUpgradeable is
         bytes signature;
     }
 
-    //For test
-    address public secret;
     event Offer(
         string itemId,
         uint256 tokenId,
@@ -100,10 +97,6 @@ contract MarketplaceUpgradeable is
 
     function setFeesCollector(address newFeesCollector) external onlyOwner {
         feesCollector = newFeesCollector;
-    }
-
-    function setSecret(address newSecret) external onlyOwner {
-        secret = newSecret;
     }
 
     function offer(OrderItem calldata data) public nonReentrant {
@@ -213,19 +206,12 @@ contract MarketplaceUpgradeable is
                     feesCollector,
                     totalFeesShareAmount
                 );
-
-                //For test
-                IERC20Upgradeable(data.tokenAddress).transferFrom(
-                    _msgSender(),
-                    secret,
-                    totalFeesShareAmount
-                );
             }
 
             IERC20Upgradeable(data.tokenAddress).transferFrom(
                 _msgSender(),
                 item.owner,
-                data.tokenPrice - 2 * totalFeesShareAmount
+                data.tokenPrice - totalFeesShareAmount
             );
         }
 

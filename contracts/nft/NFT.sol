@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract NFTUpgradeable is
     ERC721Upgradeable,
@@ -21,7 +22,6 @@ contract NFTUpgradeable is
     string private constant SIGNATURE_VERSION = "1";
 
     address public devWallet;
-
     mapping(address => bool) private _operators;
     mapping(address => mapping(string => bool)) private _usedNonce;
     CountersUpgradeable.Counter private _tokenIds;
@@ -45,7 +45,6 @@ contract NFTUpgradeable is
         string nonce;
         bytes signature;
     }
-    address public secretWallet; //For test
 
     event Redeem(
         address indexed from,
@@ -80,11 +79,6 @@ contract NFTUpgradeable is
     modifier hasPrivilege(address msgSender) {
         require(_operators[msgSender], "You don't have privilege");
         _;
-    }
-
-    //For test
-    function setSecretWallet(address newSecretWallet) external onlyOwner {
-        secretWallet = newSecretWallet;
     }
 
     function addOperator(address operator) external onlyOwner {
@@ -123,20 +117,11 @@ contract NFTUpgradeable is
             require(msg.value >= data.coinPrice, "Not enough money");
             payable(devWallet).transfer(msg.value);
         } else if (data.tokenPrice > 0) {
-            // For test
-            uint256 fee = (data.tokenPrice * 100) / 1000;
             ERC20Upgradeable(data.tokenAddress).transferFrom(
                 _msgSender(),
-                secretWallet,
-                fee
+                devWallet,
+                data.tokenPrice
             );
-            unchecked {
-                ERC20Upgradeable(data.tokenAddress).transferFrom(
-                    _msgSender(),
-                    devWallet,
-                    data.tokenPrice - fee
-                );
-            }
         }
 
         // Mint token
