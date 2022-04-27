@@ -43,7 +43,7 @@ describe("RUNGEMUpgradeable", async () => {
       const amount = ethers.utils.parseEther("1000000001");
 
       await proxyInstance.connect(deployer).setBurnAmount(amount);
-      const newBurnAmount = await proxyInstance.connect(deployer)._burnAmount();
+      const newBurnAmount = await proxyInstance.connect(deployer).burnAmount();
       expect(newBurnAmount).equal(amount);
 
       await proxyInstance.connect(deployer).mintBurnToken(user.address);

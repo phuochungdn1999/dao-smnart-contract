@@ -44,7 +44,7 @@ describe("Game", async () => {
                 contract: GameContract.address,
             };
             const type = {
-                WithdrawTokenVoucher: [
+                WithdrawTokenVoucherStruct: [
                     { name: "withdrawer", type: "address" },
                     { name: "tokenAddress", type: "address" },
                     { name: "amount", type: "uint256" },
