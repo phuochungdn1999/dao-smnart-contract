@@ -32,7 +32,7 @@ const config: HardhatUserConfig = {
       gas: 5000000,
       chainId: 97,
       accounts: {
-        mnemonic: process.env.MNEMONIC_BSC,
+        mnemonic: process.env.MNEMONIC,
       },
     },
     mainnet: {
@@ -40,33 +40,12 @@ const config: HardhatUserConfig = {
       gas: 5000000,
       chainId: 56,
       accounts: {
-        mnemonic: process.env.MNEMONIC_BSC,
-      },
-    },
-    avalanche: {
-      url: 'https://api.avax.network/ext/bc/C/rpc',
-      gas: 5000000,
-      chainId: 43114,
-      accounts: {
-        mnemonic: process.env.MNEMONIC_AVA,
-      },
-    },
-    avalancheFujiTestnet: {
-      url: 'https://api.avax-test.network/ext/bc/C/rpc',
-      gas: 5000000,
-      chainId: 43113,
-      accounts: {
-        mnemonic: process.env.MNEMONIC_AVA,
+        mnemonic: process.env.MNEMONIC,
       },
     },
   },
   etherscan: {
-    apiKey: {
-      bsc: process.env.BSC_API_KEY,
-      bscTestnet: process.env.BSC_API_KEY,
-      avalanche: process.env.SNOWTRACE_API_KEY,
-      avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY
-    }
+    apiKey: process.env.BSC_API_KEY,
   },
   gasReporter: {
     enabled: false,
