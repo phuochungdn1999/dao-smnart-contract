@@ -9,3 +9,5 @@ const deployGameUpgradeable = async () => {
     return proxyInstance;
 };
 export default deployGameUpgradeable;
+
+deployGameUpgradeable();

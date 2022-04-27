@@ -15,3 +15,5 @@ const deployRUNNOWUpgradeable = async () => {
 };
 
 export default deployRUNNOWUpgradeable;
+
+deployRUNNOWUpgradeable();
