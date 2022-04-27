@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract NFTUpgradeable is
+contract NFTUpgradeableV2 is
     ERC721Upgradeable,
     OwnableUpgradeable,
     EIP712Upgradeable
@@ -29,15 +29,28 @@ contract NFTUpgradeable is
 
     event RedeemEvent(
         address indexed user,
-        string id,
-        string itemType,
         uint256 tokenId,
-        string nonce,
+        ItemVoucherStruct voucher,
         uint64 timestamp
     );
 
-    string private constant _SIGNING_DOMAIN = "NFT-Voucher";
-    string private constant _SIGNATURE_VERSION = "1";
+    struct StarterBoxStruct {
+        string id;
+        uint256 tokenId;
+        uint256 numberTokens;
+        string nonce;
+        bytes signature;
+    }
+
+    event OpenStarterBoxEvent(
+        address indexed user,
+        string id,
+        uint256[] tokenIds,
+        uint64 timestamp
+    );
+
+    string private constant SIGNING_DOMAIN = "NFT-Voucher";
+    string private constant SIGNATURE_VERSION = "1";
 
     address public devWalletAddress;
     mapping(string => bool) private _noncesMap;
@@ -48,7 +61,7 @@ contract NFTUpgradeable is
     }
 
     function __NFT_init() internal initializer {
-        __EIP712_init(_SIGNING_DOMAIN, _SIGNATURE_VERSION);
+        __EIP712_init(SIGNING_DOMAIN, SIGNATURE_VERSION);
         __ERC721_init("NFT", "NFT");
         __Ownable_init();
         __NFT_init_unchained();
@@ -90,10 +103,8 @@ contract NFTUpgradeable is
 
         emit RedeemEvent(
             _msgSender(),
-            data.id,
-            data.itemType,
             newTokenId,
-            data.nonce,
+            data,
             uint64(block.timestamp)
         );
     }
@@ -123,6 +134,67 @@ contract NFTUpgradeable is
                         keccak256(bytes(data.itemType)),
                         data.price,
                         data.priceTokenAddress,
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
+    function openStarterBox(StarterBoxStruct calldata data) public {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyStarterBox(data);
+        // Make sure that the signer is authorized to open start box
+        require(signer == owner(), "Signature invalid or unauthorized");
+
+        // Check nonce & exists token id
+        require(_exists(data.tokenId), "Approved query for nonexistent token");
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        // Mint more tokens
+        uint256[] memory tokenIds = new uint256[](data.numberTokens);
+        // Reuse token, do not need to burn and create an new one
+        tokenIds[0] = data.tokenId;
+
+        for (uint256 i = 1; i < data.numberTokens; i++) {
+            _tokenIds.increment();
+            uint256 newTokenId = _tokenIds.current();
+            _mint(_msgSender(), newTokenId);
+            tokenIds[i] = newTokenId;
+        }
+
+        emit OpenStarterBoxEvent(
+            _msgSender(),
+            data.id,
+            tokenIds,
+            uint64(block.timestamp)
+        );
+    }
+
+    function _verifyStarterBox(StarterBoxStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashStarterBox(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashStarterBox(StarterBoxStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "StarterBoxStruct(string id,uint256 tokenId,uint256 numberTokens,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        data.tokenId,
+                        data.numberTokens,
                         keccak256(bytes(data.nonce))
                     )
                 )

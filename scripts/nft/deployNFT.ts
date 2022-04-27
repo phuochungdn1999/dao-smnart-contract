@@ -1,11 +1,12 @@
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers, upgrades } from 'hardhat';
 
-const deployNFTUpgradeable = async () => {
-    const accounts = await ethers.getSigners();
-    const upgradeableFactory = await ethers.getContractFactory("NFTUpgradeable", accounts[0]);
+const deployNFTUpgradeable = async (deployer: SignerWithAddress) => {
+    const upgradeableFactory = await ethers.getContractFactory("NFTUpgradeable", deployer);
     const proxyInstance = await upgrades.deployProxy(upgradeableFactory);
     await proxyInstance.deployed();
-    console.log("NFTUpgradeable: ", proxyInstance.address);
+    console.log("NFT proxy's address: ", proxyInstance.address);
+
     return proxyInstance;
 };
 

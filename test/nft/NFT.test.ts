@@ -1,173 +1,127 @@
-/* eslint-disable node/no-missing-import */
-/* eslint-disable no-unused-vars */
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { expect } from "chai";
-import { BigNumber, Contract } from "ethers";
-import { ethers } from "hardhat";
-import { v4 as uuidv4 } from "uuid";
-import deployRUNNOWUpgradeable from "../../scripts/coin/deployRUNNOW";
-import deployNFTUpgradeable from "../../scripts/nft/deployNFT";
-import { createVoucher } from "../../utils/hashVoucher";
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
+import { BigNumber, Contract } from 'ethers';
+import { ethers } from 'hardhat';
+import { v4 as uuidv4 } from 'uuid';
+import deployRUNNOWUpgradeable from '../../scripts/coin/deployRUNNOW';
+import deployNFTUpgradeable from '../../scripts/nft/deployNFT';
+import upgradeNFTUpgradeable from '../../scripts/nft/upgradeNFT';
+import { createVoucher } from '../../utils/hashVoucher';
 
 let deployer: SignerWithAddress;
 let user: SignerWithAddress;
-let ERC721Instance: Contract;
+let NFTConstract: Contract;
 let RUNNOWContract: Contract;
 
-describe("NFT", () => {
-  beforeEach(async () => {
-    [deployer, user] = await ethers.getSigners();
-    RUNNOWContract = await deployRUNNOWUpgradeable();
-    ERC721Instance = await deployNFTUpgradeable();
+describe('NFT', () => {
+    beforeEach(async () => {
+        [deployer, user] = await ethers.getSigners();
+        RUNNOWContract = await deployRUNNOWUpgradeable();
+        NFTConstract = await deployNFTUpgradeable(deployer);
 
-    await RUNNOWContract.connect(deployer).transfer(
-      user.address,
-      ethers.utils.parseEther("10000")
-    );
-  });
-
-  it("Mint a box, premint, craft NFT by token ERC-20", async () => {
-    await RUNNOWContract.connect(user).approve(
-      ERC721Instance.address,
-      ethers.utils.parseEther("25")
-    );
-    const nonce = uuidv4();
-    const auth = {
-      signer: deployer,
-      contract: ERC721Instance.address,
-    };
-    const types = {
-      NFTVoucher: [
-        { name: "redeemer", type: "address" },
-        { name: "itemId", type: "string" },
-        { name: "itemClass", type: "string" },
-        { name: "coinPrice", type: "uint256" },
-        { name: "tokenPrice", type: "uint256" },
-        { name: "tokenAddress", type: "address" },
-        { name: "nonce", type: "string" },
-      ],
-    };
-    const voucher = {
-      redeemer: user.address,
-      itemId: "123",
-      itemClass: "box",
-      coinPrice: ethers.utils.parseEther("0"),
-      tokenPrice: ethers.utils.parseEther("25"),
-      tokenAddress: RUNNOWContract.address,
-      nonce: nonce,
-    };
-    const signature = await createVoucher(types, auth, voucher);
-    const tx = await ERC721Instance.connect(user).redeem(signature);
-    const receipt = await tx.wait();
-    const event = receipt.events?.filter((x: any) => {
-      return x.event === "Redeem";
+        await RUNNOWContract.connect(deployer).transfer(
+            user.address,
+            ethers.utils.parseEther('10000')
+        );
     });
 
-    expect(event[0].args.voucher.itemId).to.equal(voucher.itemId);
-  });
+    it('Premint by token ERC-20', async () => {
+        // Mint box
+        await RUNNOWContract.connect(user).approve(
+            NFTConstract.address,
+            ethers.utils.parseEther('25')
+        );
+        const nonce = uuidv4();
+        const auth = {
+            signer: deployer,
+            contract: NFTConstract.address,
+        };
+        const types = {
+            ItemVoucherStruct: [
+                { name: 'id', type: 'string' },
+                { name: 'itemType', type: 'string' },
+                { name: 'price', type: 'uint256' },
+                { name: 'priceTokenAddress', type: 'address' },
+                { name: 'nonce', type: 'string' },
+            ],
+        };
+        const voucher = {
+            id: '123',
+            itemType: 'box',
+            price: ethers.utils.parseEther('25'),
+            priceTokenAddress: RUNNOWContract.address,
+            nonce: nonce,
+        };
+        const signature = await createVoucher(types, auth, voucher);
+        const tx = await NFTConstract.connect(user).redeem(signature);
+        const receipt = await tx.wait();
+        const event = receipt.events?.filter((x: any) => {
+            return x.event === 'RedeemEvent';
+        });
 
-  it("Mint a box, premint, craft NFT by native coin", async () => {
-    const nonce = uuidv4();
-    const auth = {
-      signer: deployer,
-      contract: ERC721Instance.address,
-    };
-    const types = {
-      NFTVoucher: [
-        { name: "redeemer", type: "address" },
-        { name: "itemId", type: "string" },
-        { name: "itemClass", type: "string" },
-        { name: "coinPrice", type: "uint256" },
-        { name: "tokenPrice", type: "uint256" },
-        { name: "tokenAddress", type: "address" },
-        { name: "nonce", type: "string" },
-      ],
-    };
-    const voucher = {
-      redeemer: user.address,
-      itemId: "12345",
-      itemClass: "box",
-      coinPrice: ethers.utils.parseEther("1"),
-      tokenPrice: ethers.utils.parseEther("0"),
-      tokenAddress: RUNNOWContract.address,
-      nonce: nonce,
-    };
-    const signature = await createVoucher(types, auth, voucher);
-    const tx = await ERC721Instance.connect(user).redeem(signature, {
-      value: ethers.utils.parseEther("1")
-    });
-    const receipt = await tx.wait();
-    const event = receipt.events?.filter((x: any) => {
-      return x.event === "Redeem";
-    });
-
-    expect(event[0].args.voucher.itemId).to.equal(voucher.itemId);
-  });
-
-  it("Open a box", async () => {
-    // Mint box
-    await RUNNOWContract.connect(user).approve(
-      ERC721Instance.address,
-      ethers.utils.parseEther("25")
-    );
-    const nonce1 = uuidv4();
-    const auth1 = {
-      signer: deployer,
-      contract: ERC721Instance.address,
-    };
-    const types1 = {
-      NFTVoucher: [
-        { name: "redeemer", type: "address" },
-        { name: "itemId", type: "string" },
-        { name: "itemClass", type: "string" },
-        { name: "coinPrice", type: "uint256" },
-        { name: "tokenPrice", type: "uint256" },
-        { name: "tokenAddress", type: "address" },
-        { name: "nonce", type: "string" },
-      ],
-    };
-    const voucher1 = {
-      redeemer: user.address,
-      itemId: "123",
-      itemClass: "box",
-      coinPrice: ethers.utils.parseEther("0"),
-      tokenPrice: ethers.utils.parseEther("25"),
-      tokenAddress: RUNNOWContract.address,
-      nonce: nonce1,
-    };
-    const signature1 = await createVoucher(types1, auth1, voucher1);
-    const tx = await ERC721Instance.connect(user).redeem(signature1);
-    await tx.wait();
-
-    // Open box
-    const nonce2 = uuidv4();
-    const auth2 = {
-      signer: deployer,
-      contract: ERC721Instance.address,
-    };
-    const types2 = {
-      StarterBox: [
-        { name: "redeemer", type: "address" },
-        { name: "boxId", type: "string" },
-        { name: "boxTokenId", type: "uint256" },
-        { name: "numberTokens", type: "uint256" },
-        { name: "nonce", type: "string" },
-      ],
-    };
-    const voucher2 = {
-      redeemer: user.address,
-      boxId: "123",
-      boxTokenId: BigNumber.from(1),
-      numberTokens: BigNumber.from(2),
-      nonce: nonce2,
-    };
-    const signature2 = await createVoucher(types2, auth2, voucher2);
-    const tx2 = await ERC721Instance.connect(user).openStarterBox(signature2);
-    const receipt = await tx2.wait();
-    const event = receipt.events?.filter((x: any) => {
-      return x.event === "MintedStarterBox";
+        expect(event[0].args.id).to.equal(voucher.id);
     });
 
-    expect(event[0].args.from).to.equal(user.address);
-  });
+    it('Upgrade NFT contract and open box', async () => {
+        const NFTConstractV2 = await upgradeNFTUpgradeable(NFTConstract.address, deployer);
+
+        // Mint box
+        await RUNNOWContract.connect(user).approve(
+            NFTConstract.address,
+            ethers.utils.parseEther('25')
+        );
+        const nonce = uuidv4();
+        const auth = {
+            signer: deployer,
+            contract: NFTConstract.address,
+        };
+        const types = {
+            ItemVoucherStruct: [
+                { name: 'id', type: 'string' },
+                { name: 'itemType', type: 'string' },
+                { name: 'price', type: 'uint256' },
+                { name: 'priceTokenAddress', type: 'address' },
+                { name: 'nonce', type: 'string' },
+            ],
+        };
+        const voucher = {
+            id: '123',
+            itemType: 'box',
+            price: ethers.utils.parseEther('25'),
+            priceTokenAddress: RUNNOWContract.address,
+            nonce: nonce,
+        };
+        const signature = await createVoucher(types, auth, voucher);
+        const tx = await NFTConstract.connect(user).redeem(signature);
+        await tx.wait();
+
+        // Open starter box
+        const nonce2 = uuidv4();
+        const auth2 = {
+            signer: deployer,
+            contract: NFTConstract.address,
+        };
+        const types2 = {
+            StarterBoxStruct: [
+                { name: 'id', type: 'string' },
+                { name: 'tokenId', type: 'uint256' },
+                { name: 'numberTokens', type: 'uint256' },
+                { name: 'nonce', type: 'string' },
+            ],
+        };
+        const voucher2 = {
+            id: '123',
+            tokenId: BigNumber.from(1),
+            numberTokens: BigNumber.from(2),
+            nonce: nonce2,
+        };
+        const signature2 = await createVoucher(types2, auth2, voucher2);
+        const tx2 = await NFTConstractV2.connect(user).openStarterBox(signature2);
+        const receipt2 = await tx2.wait();
+        const event2 = receipt2.events?.filter((x: any) => {
+            return x.event === 'OpenStarterBoxEvent';
+        });
+
+        expect(event2[0].args.user).to.equal(user.address);
+    });
 });
