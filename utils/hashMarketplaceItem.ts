@@ -2,7 +2,7 @@
 // eslint-disable-next-line node/no-unpublished-import
 import hre from "hardhat";
 
-const SIGNING_DOMAIN_NAME = "MarketplaceItem";
+const SIGNING_DOMAIN_NAME = "Marketplace-Item";
 const SIGNING_DOMAIN_VERSION = "1";
 
 export const hashOrderItem = async (types: any, auth: any, orderItem: any) => {
