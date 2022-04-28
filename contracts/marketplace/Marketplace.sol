@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 pragma abicoder v2;
 
@@ -18,94 +19,100 @@ contract MarketplaceUpgradeable is
     using StringsUpgradeable for uint256;
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
-    string public constant SIGNING_DOMAIN = "MarketplaceItem";
-    string private constant SIGNATURE_VERSION = "1";
-
-    address public feesCollector;
-    mapping(string => Item) public available;
-
-    struct Item {
+    struct ItemStruct {
+        string id;
+        string itemType;
         uint256 tokenId;
+        address itemAddress;
         address owner;
-        uint256 itemPrice;
-        address itemAddress;
-        bool exists;
+        uint256 price;
+        address priceTokenAddress;
+        bool isExist;
     }
 
-    struct OrderItem {
-        address seller;
-        string itemId;
+    struct OrderItemStruct {
+        string id;
+        string itemType;
         uint256 tokenId;
-        uint256 itemPrice;
         address itemAddress;
+        uint256 price;
+        address priceTokenAddress;
         string nonce;
         bytes signature;
     }
 
-    struct CartItem {
-        address buyer;
-        string itemId;
-        uint256 feesCollectorCutPerMillion;
-        uint256 coinPrice;
-        uint256 tokenPrice;
-        address tokenAddress;
-        string nonce;
-        bytes signature;
-    }
-
-    event Offer(
-        string itemId,
+    event OfferEvent(
+        string id,
+        string itemType,
         uint256 tokenId,
-        uint256 itemPrice,
-        address itemAddress,
-        address seller,
+        address owner,
+        uint256 price,
+        address priceTokenAddress,
         uint64 timestamp
     );
 
-    event Buy(
-        address seller,
+    event BuyEvent(
+        string id,
+        string itemType,
+        uint256 tokenId,
+        address owner,
+        uint256 price,
+        address priceTokenAddress,
         address buyer,
-        string itemId,
-        uint256 tokenId,
-        uint256 itemPrice,
-        address itemAddress,
         uint64 timestamp
     );
 
-    event Withdraw(
-        string itemId,
+    event WithdrawEvent(
+        string id,
+        string itemType,
         uint256 tokenId,
-        address itemAddress,
         address owner,
         uint64 timestamp
     );
+
+    string public constant _SIGNING_DOMAIN = "Marketplace-Item";
+    string private constant _SIGNATURE_VERSION = "1";
+
+    address public feesCollectorAddress;
+    uint256 public feesCollectorCutPerMillion;
+    mapping(string => ItemStruct) public itemsMap;
+    mapping(string => bool) private _noncesMap;
 
     function initialize() public virtual initializer {
         __Marketplace_init();
     }
 
     function __Marketplace_init() internal initializer {
-        __EIP712_init(SIGNING_DOMAIN, SIGNATURE_VERSION);
+        __EIP712_init(_SIGNING_DOMAIN, _SIGNATURE_VERSION);
         __ReentrancyGuard_init();
         __Ownable_init();
         __Marketplace_init_unchained();
     }
 
     function __Marketplace_init_unchained() internal initializer {
-        feesCollector = _msgSender();
+        feesCollectorAddress = _msgSender();
+        feesCollectorCutPerMillion = 35_000; // 3.5%
     }
 
-    function setFeesCollector(address newFeesCollector) external onlyOwner {
-        feesCollector = newFeesCollector;
+    function setFeesCollectorAddress(address data) external onlyOwner {
+        feesCollectorAddress = data;
     }
 
-    function offer(OrderItem calldata data) public nonReentrant {
+    function setFeesCollectorCutPerMillion(uint256 data) external onlyOwner {
+        feesCollectorCutPerMillion = data;
+    }
+
+    function offer(OrderItemStruct calldata data) public {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyOrderItem(data);
-        // Make sure that the signer is authorized to offer items
+        // Make sure that the signer is authorized to offer item
         require(signer == owner(), "Signature invalid or unauthorized");
 
-        if (!available[data.itemId].exists) {
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        if (!itemsMap[data.id].isExist) {
             IERC721Upgradeable(data.itemAddress).transferFrom(
                 _msgSender(),
                 address(this),
@@ -113,25 +120,29 @@ contract MarketplaceUpgradeable is
             );
         }
 
-        available[data.itemId] = Item({
+        itemsMap[data.id] = ItemStruct({
+            id: data.id,
+            itemType: data.itemType,
+            itemAddress: data.itemAddress,
             tokenId: data.tokenId,
             owner: _msgSender(),
-            itemPrice: data.itemPrice,
-            itemAddress: data.itemAddress,
-            exists: true
+            price: data.price,
+            priceTokenAddress: data.priceTokenAddress,
+            isExist: true
         });
 
-        emit Offer(
-            data.itemId,
+        emit OfferEvent(
+            data.id,
+            data.itemType,
             data.tokenId,
-            data.itemPrice,
-            data.itemAddress,
             _msgSender(),
+            data.price,
+            data.priceTokenAddress,
             uint64(block.timestamp)
         );
     }
 
-    function _verifyOrderItem(OrderItem calldata data)
+    function _verifyOrderItem(OrderItemStruct calldata data)
         internal
         view
         returns (address)
@@ -140,7 +151,7 @@ contract MarketplaceUpgradeable is
         return ECDSAUpgradeable.recover(digest, data.signature);
     }
 
-    function _hashOrderItem(OrderItem calldata data)
+    function _hashOrderItem(OrderItemStruct calldata data)
         internal
         view
         returns (bytes32)
@@ -150,130 +161,53 @@ contract MarketplaceUpgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "OrderItem(address seller,string itemId,uint256 tokenId,uint256 itemPrice,address itemAddress,string nonce)"
+                            "OrderItemStruct(string id,string itemType,uint256 tokenId,address itemAddress,uint256 price,address priceTokenAddress,string nonce)"
                         ),
-                        _msgSender(),
-                        keccak256(bytes(data.itemId)),
+                        keccak256(bytes(data.id)),
+                        keccak256(bytes(data.itemType)),
                         data.tokenId,
-                        data.itemPrice,
                         data.itemAddress,
+                        data.price,
+                        data.priceTokenAddress,
                         keccak256(bytes(data.nonce))
                     )
                 )
             );
     }
 
-    function buy(CartItem calldata data) public payable nonReentrant {
-        // Make sure signature is valid and get the address of the signer
-        address signer = _verifyCartItem(data);
-        // Make sure that the signer is authorized to buy items
-        require(signer == owner(), "Signature invalid or unauthorized");
-
+    function buy(string memory id) public payable nonReentrant {
         // Check exists & don't buy own
-        require(available[data.itemId].exists, "Item is not in marketplace");
+        require(itemsMap[id].isExist, "Item is not in marketplace");
         require(
-            available[data.itemId].owner != _msgSender(),
-            "You cannot buy your own NFT"
+            itemsMap[id].owner != _msgSender(),
+            "You cannot buy your own item"
         );
 
-        Item memory item = available[data.itemId];
+        ItemStruct memory item = itemsMap[id];
 
         // Transfer payment
-        if (msg.value > 0 && data.coinPrice > 0) {
-            require(msg.value >= data.coinPrice, "Not enough money");
+        require(
+            IERC20Upgradeable(item.priceTokenAddress).balanceOf(_msgSender()) >=
+                item.price,
+            "Not enough money"
+        );
 
-            uint256 totalFeesShareAmount = (data.coinPrice *
-                data.feesCollectorCutPerMillion) / 1_000_000;
+        uint256 totalFeesShareAmount = (item.price *
+            feesCollectorCutPerMillion) / 1_000_000;
 
-            if (totalFeesShareAmount > 0) {
-                payable(feesCollector).transfer(totalFeesShareAmount);
-            }
-
-            payable(item.owner).transfer(msg.value - totalFeesShareAmount);
-        } else if (data.tokenPrice > 0) {
-            require(
-                IERC20Upgradeable(data.tokenAddress).balanceOf(_msgSender()) >=
-                    data.coinPrice,
-                "Not enough money"
-            );
-
-            uint256 totalFeesShareAmount = (data.tokenPrice *
-                data.feesCollectorCutPerMillion) / 1_000_000;
-
-            if (totalFeesShareAmount > 0) {
-                IERC20Upgradeable(data.tokenAddress).transferFrom(
-                    _msgSender(),
-                    feesCollector,
-                    totalFeesShareAmount
-                );
-            }
-
-            IERC20Upgradeable(data.tokenAddress).transferFrom(
+        if (totalFeesShareAmount > 0) {
+            IERC20Upgradeable(item.priceTokenAddress).transferFrom(
                 _msgSender(),
-                item.owner,
-                data.tokenPrice - totalFeesShareAmount
+                feesCollectorAddress,
+                totalFeesShareAmount
             );
         }
 
-        IERC721Upgradeable(item.itemAddress).transferFrom(
-            address(this),
+        IERC20Upgradeable(item.priceTokenAddress).transferFrom(
             _msgSender(),
-            item.tokenId
-        );
-
-        emit Buy(
             item.owner,
-            _msgSender(),
-            data.itemId,
-            item.tokenId,
-            item.itemPrice,
-            item.itemAddress,
-            uint64(block.timestamp)
+            item.price - totalFeesShareAmount
         );
-
-        delete available[data.itemId];
-    }
-
-    function _verifyCartItem(CartItem calldata data)
-        internal
-        view
-        returns (address)
-    {
-        bytes32 digest = _hashCartItem(data);
-        return ECDSAUpgradeable.recover(digest, data.signature);
-    }
-
-    function _hashCartItem(CartItem calldata data)
-        internal
-        view
-        returns (bytes32)
-    {
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        keccak256(
-                            "CartItem(address buyer,string itemId,uint256 feesCollectorCutPerMillion,uint256 coinPrice,uint256 tokenPrice,address tokenAddress,string nonce)"
-                        ),
-                        _msgSender(),
-                        keccak256(bytes(data.itemId)),
-                        data.feesCollectorCutPerMillion,
-                        data.coinPrice,
-                        data.tokenPrice,
-                        data.tokenAddress,
-                        keccak256(bytes(data.nonce))
-                    )
-                )
-            );
-    }
-
-    function withdraw(string memory itemId) public nonReentrant {
-        require(
-            available[itemId].owner == _msgSender(),
-            "You don't own this NFT"
-        );
-
-        Item memory item = available[itemId];
 
         IERC721Upgradeable(item.itemAddress).transferFrom(
             address(this),
@@ -281,14 +215,39 @@ contract MarketplaceUpgradeable is
             item.tokenId
         );
 
-        emit Withdraw(
-            itemId,
+        emit BuyEvent(
+            item.id,
+            item.itemType,
             item.tokenId,
-            item.itemAddress,
+            item.owner,
+            item.price,
+            item.priceTokenAddress,
             _msgSender(),
             uint64(block.timestamp)
         );
 
-        delete available[itemId];
+        delete itemsMap[id];
+    }
+
+    function withdraw(string memory id) public {
+        require(itemsMap[id].owner == _msgSender(), "You don't own this item");
+
+        ItemStruct memory item = itemsMap[id];
+
+        IERC721Upgradeable(item.itemAddress).transferFrom(
+            address(this),
+            _msgSender(),
+            item.tokenId
+        );
+
+        emit WithdrawEvent(
+            item.id,
+            item.itemType,
+            item.tokenId,
+            item.owner,
+            uint64(block.timestamp)
+        );
+
+        delete itemsMap[id];
     }
 }
