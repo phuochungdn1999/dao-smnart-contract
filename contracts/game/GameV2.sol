@@ -5,59 +5,61 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
-contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
-    string private constant SIGNING_DOMAIN = "NFT-Voucher";
-    string private constant SIGNATURE_VERSION = "1";
-    mapping(address => mapping(string => bool)) private _usedNonce;
-
-    struct WithdrawVoucher {
-        address withdrawer;
-        address token;
-        uint256 tokenId;
-        string nonce;
-        bytes signature;
-    }
-
-    struct WithdrawTokenVoucher {
-        address withdrawer;
+contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
+    struct WithdrawTokenVoucherStruct {
         address tokenAddress;
         uint256 amount;
         string nonce;
         bytes signature;
     }
 
-    event DepositNFT(
+    event WithdrawTokenEvent(
         address indexed user,
-        address indexed token,
-        uint256 tokenId,
+        WithdrawTokenVoucherStruct voucher,
         uint64 timestamp
     );
 
-    event WithdrawNFT(
-        address indexed user,
-        WithdrawVoucher voucher,
-        uint64 timestamp
-    );
-
-    event DepositToken(
+    event DepositTokenEvent(
         address indexed user,
         address indexed token,
         uint256 amount,
         uint64 timestamp
     );
 
-    event WithdrawToken(
+    event DepositItemEvent(
         address indexed user,
-        WithdrawTokenVoucher voucher,
+        address indexed token,
+        uint256 tokenId,
+        string itemType,
         uint64 timestamp
     );
+
+    struct WithdrawItemVoucherStruct {
+        address token;
+        uint256 tokenId;
+        string nonce;
+        string itemType;
+        bytes signature;
+    }
+
+    event WithdrawItemEvent(
+        address indexed user,
+        string nonce,
+        string itemType,
+        uint64 timestamp
+    );
+
+    string private constant _SIGNING_DOMAIN = "NFT-Voucher";
+    string private constant _SIGNATURE_VERSION = "1";
+
+    mapping(string => bool) private _noncesMap;
 
     function initialize() public virtual initializer {
         __Game_init();
     }
 
     function __Game_init() internal initializer {
-        __EIP712_init(SIGNING_DOMAIN, SIGNATURE_VERSION);
+        __EIP712_init(_SIGNING_DOMAIN, _SIGNATURE_VERSION);
         __Ownable_init();
         __Game_init_unchained();
     }
@@ -71,13 +73,18 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
             address(this),
             amount
         );
-        emit DepositToken(_msgSender(), token, amount, uint64(block.timestamp));
+        emit DepositTokenEvent(
+            _msgSender(),
+            token,
+            amount,
+            uint64(block.timestamp)
+        );
     }
 
-    function withdrawToken(WithdrawTokenVoucher calldata voucher) public {
+    function withdrawToken(WithdrawTokenVoucherStruct calldata voucher) public {
         // make sure nonce is not used (tx is not used)
-        require(!_usedNonce[_msgSender()][voucher.nonce], "Nonce has used");
-        _usedNonce[_msgSender()][voucher.nonce] = true;
+        require(!_noncesMap[voucher.nonce], "Nonce has used");
+        _noncesMap[voucher.nonce] = true;
 
         // make sure signature is valid and get the address of the signer
         address signer = _verifyWithdrawToken(voucher);
@@ -85,56 +92,67 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         require(signer == owner(), "Signature invalid or unauthorized");
 
         IERC20Upgradeable(voucher.tokenAddress).transfer(
-            voucher.withdrawer,
+            _msgSender(),
             voucher.amount
         );
-        emit WithdrawToken(
-            voucher.withdrawer,
-            voucher,
-            uint64(block.timestamp)
-        );
+        emit WithdrawTokenEvent(_msgSender(), voucher, uint64(block.timestamp));
     }
 
-    function depositNFT(address token, uint256 tokenId) public {
+    function depositItem(
+        address token,
+        uint256 tokenId,
+        string calldata itemType
+    ) public {
         IERC721Upgradeable(token).transferFrom(
             _msgSender(),
             address(this),
             tokenId
         );
 
-        emit DepositNFT(_msgSender(), token, tokenId, uint64(block.timestamp));
+        emit DepositItemEvent(
+            _msgSender(),
+            token,
+            tokenId,
+            itemType,
+            uint64(block.timestamp)
+        );
     }
 
-    function withdrawNFT(WithdrawVoucher calldata voucher) public {
+    function withdrawItem(WithdrawItemVoucherStruct calldata voucher) public {
         // make sure nonce is not used (tx is not used)
-        require(!_usedNonce[_msgSender()][voucher.nonce], "Nonce has used");
-        _usedNonce[_msgSender()][voucher.nonce] = true;
+        require(!_noncesMap[voucher.nonce], "Nonce has used");
+        _noncesMap[voucher.nonce] = true;
 
         // make sure signature is valid and get the address of the signer
-        address signer = _verify(voucher);
+        address signer = _verifyWithdrawItem(voucher);
         // make sure that the signer is authorized
         require(signer == owner(), "Signature invalid or unauthorized");
 
         // transfer from game to withdrawer
         IERC721Upgradeable(voucher.token).safeTransferFrom(
             address(this),
-            voucher.withdrawer,
+            _msgSender(),
             voucher.tokenId
         );
 
-        emit WithdrawNFT(_msgSender(), voucher, uint64(block.timestamp));
+        emit WithdrawItemEvent(
+            _msgSender(),
+            voucher.nonce,
+            voucher.itemType,
+            uint64(block.timestamp)
+        );
     }
 
-    function _verify(WithdrawVoucher calldata voucher)
+    function _verifyWithdrawItem(WithdrawItemVoucherStruct calldata voucher)
         internal
         view
         returns (address)
     {
-        bytes32 digest = _hash(voucher);
+        bytes32 digest = _hashWithdrawItem(voucher);
         return ECDSAUpgradeable.recover(digest, voucher.signature);
     }
 
-    function _hash(WithdrawVoucher calldata voucher)
+    function _hashWithdrawItem(WithdrawItemVoucherStruct calldata voucher)
         internal
         view
         returns (bytes32)
@@ -144,9 +162,9 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawVoucher(address withdrawer,address token,uint256 tokenId,string nonce)"
+                            "WithdrawItemVoucherStruct(address withdrawer,address token,uint256 tokenId,string nonce)"
                         ),
-                        voucher.withdrawer,
+                        _msgSender(),
                         voucher.token,
                         voucher.tokenId,
                         keccak256(bytes(voucher.nonce))
@@ -155,7 +173,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
             );
     }
 
-    function _verifyWithdrawToken(WithdrawTokenVoucher calldata voucher)
+    function _verifyWithdrawToken(WithdrawTokenVoucherStruct calldata voucher)
         internal
         view
         returns (address)
@@ -164,7 +182,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         return ECDSAUpgradeable.recover(digest, voucher.signature);
     }
 
-    function _hashWithdrawToken(WithdrawTokenVoucher calldata voucher)
+    function _hashWithdrawToken(WithdrawTokenVoucherStruct calldata voucher)
         internal
         view
         returns (bytes32)
@@ -174,9 +192,9 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawTokenVoucher(address withdrawer,address tokenAddress,uint256 amount,string nonce)"
+                            "WithdrawTokenVoucherStruct(address withdrawer,address tokenAddress,uint256 amount,string nonce)"
                         ),
-                        voucher.withdrawer,
+                        _msgSender(),
                         voucher.tokenAddress,
                         voucher.amount,
                         keccak256(bytes(voucher.nonce))
