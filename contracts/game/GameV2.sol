@@ -162,7 +162,7 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawItemVoucherStruct(address withdrawer,address token,uint256 tokenId,string nonce)"
+                            "WithdrawItemVoucherStruct(address token,uint256 tokenId,string nonce)"
                         ),
                         _msgSender(),
                         voucher.token,
@@ -192,7 +192,7 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawTokenVoucherStruct(address withdrawer,address tokenAddress,uint256 amount,string nonce)"
+                            "WithdrawTokenVoucherStruct(address tokenAddress,uint256 amount,string nonce)"
                         ),
                         _msgSender(),
                         voucher.tokenAddress,
