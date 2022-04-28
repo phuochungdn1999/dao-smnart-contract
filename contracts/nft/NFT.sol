@@ -76,7 +76,7 @@ contract NFTUpgradeable is
         _operators[operator] = false;
     }
 
-    function setDevWallet(address data) external onlyOwner {
+    function setDevWalletAddress(address data) external onlyOwner {
         devWalletAddress = data;
     }
 

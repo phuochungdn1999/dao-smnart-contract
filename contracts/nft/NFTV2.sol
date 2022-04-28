@@ -30,8 +30,10 @@ contract NFTUpgradeableV2 is
 
     event RedeemEvent(
         address indexed user,
+        string id,
+        string itemType,
         uint256 tokenId,
-        ItemVoucherStruct voucher,
+        string nonce,
         uint64 timestamp
     );
 
@@ -64,8 +66,8 @@ contract NFTUpgradeableV2 is
         uint64 timestamp
     );
 
-    string private constant SIGNING_DOMAIN = "NFT-Voucher";
-    string private constant SIGNATURE_VERSION = "1";
+    string private constant _SIGNING_DOMAIN = "NFT-Voucher";
+    string private constant _SIGNATURE_VERSION = "1";
 
     address public devWalletAddress;
     mapping(string => bool) private _noncesMap;
@@ -77,7 +79,7 @@ contract NFTUpgradeableV2 is
     }
 
     function __NFT_init() internal initializer {
-        __EIP712_init(SIGNING_DOMAIN, SIGNATURE_VERSION);
+        __EIP712_init(_SIGNING_DOMAIN, _SIGNATURE_VERSION);
         __ERC721_init("NFT", "NFT");
         __Ownable_init();
         __NFT_init_unchained();
@@ -103,7 +105,7 @@ contract NFTUpgradeableV2 is
         _operators[operator] = false;
     }
 
-    function setDevWallet(address data) external onlyOwner {
+    function setDevWalletAddress(address data) external onlyOwner {
         devWalletAddress = data;
     }
 
@@ -135,8 +137,10 @@ contract NFTUpgradeableV2 is
 
         emit RedeemEvent(
             _msgSender(),
+            data.id,
+            data.itemType,
             newTokenId,
-            data,
+            data.nonce,
             uint64(block.timestamp)
         );
     }
