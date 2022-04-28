@@ -49,6 +49,20 @@ contract NFTUpgradeableV2 is
         uint64 timestamp
     );
 
+    struct CraftItemVoucherStruct {
+        address user;
+        string itemType;
+        string nonce;
+    }
+
+    event RedeemCraftItemEvent(
+        address indexed user,
+        uint256 tokenId,
+        string nonce,
+        string itemType,
+        uint64 timestamp
+    );
+
     string private constant SIGNING_DOMAIN = "NFT-Voucher";
     string private constant SIGNATURE_VERSION = "1";
 
@@ -199,5 +213,27 @@ contract NFTUpgradeableV2 is
                     )
                 )
             );
+    }
+
+    function redeemCraftItem(
+        address user,
+        string calldata itemType,
+        string calldata nonce
+    ) public {
+        require(!_noncesMap[nonce], "The nonce has been used");
+        _noncesMap[nonce] = true;
+
+        // Mint token
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+        _mint(user, newTokenId);
+
+        emit RedeemCraftItemEvent(
+            user,
+            newTokenId,
+            nonce,
+            itemType,
+            uint64(block.timestamp)
+        );
     }
 }

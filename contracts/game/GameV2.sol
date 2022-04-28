@@ -4,6 +4,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "../nft/NFTV2.sol";
 
 contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
     struct WithdrawTokenVoucherStruct {
@@ -34,6 +35,7 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
         uint64 timestamp
     );
 
+    // TODO change name tokenAddress
     struct WithdrawItemVoucherStruct {
         address token;
         uint256 tokenId;
@@ -128,19 +130,27 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
         // make sure that the signer is authorized
         require(signer == owner(), "Signature invalid or unauthorized");
 
-        // transfer from game to withdrawer
-        IERC721Upgradeable(voucher.token).safeTransferFrom(
-            address(this),
-            _msgSender(),
-            voucher.tokenId
-        );
+        if (voucher.tokenId == 0) {
+            NFTUpgradeableV2(voucher.token).redeemCraftItem(
+                _msgSender(),
+                voucher.itemType,
+                voucher.nonce
+            );
+        } else {
+            // transfer from game to withdrawer
+            IERC721Upgradeable(voucher.token).safeTransferFrom(
+                address(this),
+                _msgSender(),
+                voucher.tokenId
+            );
 
-        emit WithdrawItemEvent(
-            _msgSender(),
-            voucher.nonce,
-            voucher.itemType,
-            uint64(block.timestamp)
-        );
+            emit WithdrawItemEvent(
+                _msgSender(),
+                voucher.nonce,
+                voucher.itemType,
+                uint64(block.timestamp)
+            );
+        }
     }
 
     function _verifyWithdrawItem(WithdrawItemVoucherStruct calldata voucher)
