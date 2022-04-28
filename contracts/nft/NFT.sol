@@ -41,6 +41,7 @@ contract NFTUpgradeable is
 
     address public devWalletAddress;
     mapping(string => bool) private _noncesMap;
+    mapping(address => bool) private _operators;
     CountersUpgradeable.Counter private _tokenIds;
 
     function initialize() public virtual initializer {
@@ -55,7 +56,23 @@ contract NFTUpgradeable is
     }
 
     function __NFT_init_unchained() internal initializer {
+        _operators[_msgSender()] = true;
         devWalletAddress = _msgSender();
+    }
+
+    modifier hasPrivilege(address msgSender) {
+        require(_operators[msgSender], "You don't have privilege");
+        _;
+    }
+
+    function addOperator(address operator) external onlyOwner {
+        require(operator != address(0), "Invalid operator");
+        _operators[operator] = true;
+    }
+
+    function removeOperator(address operator) external onlyOwner {
+        require(_operators[operator], "You're not operator");
+        _operators[operator] = false;
     }
 
     function setDevWallet(address data) external onlyOwner {

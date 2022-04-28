@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
     string private constant SIGNING_DOMAIN = "NFT-Voucher";
     string private constant SIGNATURE_VERSION = "1";
-    mapping(address => mapping(string => bool)) private _usedNonce;
+    mapping(string => bool) private _noncesMap;
 
     struct WithdrawVoucher {
         address withdrawer;
@@ -76,8 +76,8 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
 
     function withdrawToken(WithdrawTokenVoucher calldata voucher) public {
         // make sure nonce is not used (tx is not used)
-        require(!_usedNonce[_msgSender()][voucher.nonce], "Nonce has used");
-        _usedNonce[_msgSender()][voucher.nonce] = true;
+        require(!_noncesMap[voucher.nonce], "Nonce has used");
+        _noncesMap[voucher.nonce] = true;
 
         // make sure signature is valid and get the address of the signer
         address signer = _verifyWithdrawToken(voucher);
@@ -107,8 +107,8 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
 
     function withdrawNFT(WithdrawVoucher calldata voucher) public {
         // make sure nonce is not used (tx is not used)
-        require(!_usedNonce[_msgSender()][voucher.nonce], "Nonce has used");
-        _usedNonce[_msgSender()][voucher.nonce] = true;
+        require(!_noncesMap[voucher.nonce], "Nonce has used");
+        _noncesMap[voucher.nonce] = true;
 
         // make sure signature is valid and get the address of the signer
         address signer = _verify(voucher);

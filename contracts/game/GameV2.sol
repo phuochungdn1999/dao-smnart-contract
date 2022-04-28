@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "../nft/NFTV2.sol";
+import "hardhat/console.sol";
 
 contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
     struct WithdrawTokenVoucherStruct {
@@ -35,19 +36,19 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
         uint64 timestamp
     );
 
-    // TODO change name tokenAddress
     struct WithdrawItemVoucherStruct {
-        address token;
+        string id;
+        address tokenAddress;
         uint256 tokenId;
-        string nonce;
         string itemType;
+        string nonce;
         bytes signature;
     }
 
     event WithdrawItemEvent(
         address indexed user,
-        string nonce,
         string itemType,
+        string nonce,
         uint64 timestamp
     );
 
@@ -131,14 +132,14 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
         require(signer == owner(), "Signature invalid or unauthorized");
 
         if (voucher.tokenId == 0) {
-            NFTUpgradeableV2(voucher.token).redeemCraftItem(
+            NFTUpgradeableV2(voucher.tokenAddress).redeemCraftItem(
                 _msgSender(),
                 voucher.itemType,
                 voucher.nonce
             );
         } else {
             // transfer from game to withdrawer
-            IERC721Upgradeable(voucher.token).safeTransferFrom(
+            IERC721Upgradeable(voucher.tokenAddress).safeTransferFrom(
                 address(this),
                 _msgSender(),
                 voucher.tokenId
@@ -146,8 +147,8 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
 
             emit WithdrawItemEvent(
                 _msgSender(),
-                voucher.nonce,
                 voucher.itemType,
+                voucher.nonce,
                 uint64(block.timestamp)
             );
         }
@@ -162,7 +163,7 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
         return ECDSAUpgradeable.recover(digest, voucher.signature);
     }
 
-    function _hashWithdrawItem(WithdrawItemVoucherStruct calldata voucher)
+    function _hashWithdrawItem(WithdrawItemVoucherStruct calldata data)
         internal
         view
         returns (bytes32)
@@ -172,12 +173,13 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawItemVoucherStruct(address token,uint256 tokenId,string nonce)"
+                            "WithdrawItemVoucherStruct(string id,address tokenAddress,uint256 tokenId,string itemType,string nonce)"
                         ),
-                        _msgSender(),
-                        voucher.token,
-                        voucher.tokenId,
-                        keccak256(bytes(voucher.nonce))
+                        keccak256(bytes(data.id)),
+                        data.tokenAddress,
+                        data.tokenId,
+                        data.itemType,
+                        keccak256(bytes(data.nonce))
                     )
                 )
             );
@@ -204,7 +206,6 @@ contract GameUpgradeableV2 is OwnableUpgradeable, EIP712Upgradeable {
                         keccak256(
                             "WithdrawTokenVoucherStruct(address tokenAddress,uint256 amount,string nonce)"
                         ),
-                        _msgSender(),
                         voucher.tokenAddress,
                         voucher.amount,
                         keccak256(bytes(voucher.nonce))
