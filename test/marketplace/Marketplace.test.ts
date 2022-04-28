@@ -20,7 +20,7 @@ let MarketplaceContract: Contract;
 describe('Marketplace', async () => {
     beforeEach(async () => {
         [deployer, user, buyer, feesCollector] = await ethers.getSigners();
-        RUNNOWContract = await deployRUNNOWUpgradeable();
+        RUNNOWContract = await deployRUNNOWUpgradeable(deployer);
         NFTContract = await deployNFTUpgradeable(deployer);
         MarketplaceContract = await deployMarketplaceUpgradeable(deployer);
 

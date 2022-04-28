@@ -16,7 +16,7 @@ let RUNNOWContract: Contract;
 describe('NFT', () => {
     beforeEach(async () => {
         [deployer, user] = await ethers.getSigners();
-        RUNNOWContract = await deployRUNNOWUpgradeable();
+        RUNNOWContract = await deployRUNNOWUpgradeable(deployer);
         NFTConstract = await deployNFTUpgradeable(deployer);
 
         await RUNNOWContract.connect(deployer).transfer(
