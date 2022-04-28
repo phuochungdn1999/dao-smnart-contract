@@ -59,7 +59,7 @@ contract NFTUpgradeable is
         devWalletAddress = _msgSender();
     }
 
-    function setDevWallet(address data) external onlyOwner {
+    function setDevWalletAddress(address data) external onlyOwner {
         devWalletAddress = data;
     }
 
