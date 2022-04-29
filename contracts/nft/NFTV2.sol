@@ -90,20 +90,20 @@ contract NFTUpgradeableV2 is
         devWalletAddress = _msgSender();
     }
 
-    modifier hasPrivilege(address msgSender) {
-        require(_operators[msgSender], "You don't have privilege");
-        _;
-    }
+    // modifier hasPrivilege(address msgSender) {
+    //     require(_operators[msgSender], "You don't have privilege");
+    //     _;
+    // }
 
-    function addOperator(address operator) external onlyOwner {
-        require(operator != address(0), "Invalid operator");
-        _operators[operator] = true;
-    }
+    // function addOperator(address operator) external onlyOwner {
+    //     require(operator != address(0), "Invalid operator");
+    //     _operators[operator] = true;
+    // }
 
-    function removeOperator(address operator) external onlyOwner {
-        require(_operators[operator], "You're not operator");
-        _operators[operator] = false;
-    }
+    // function removeOperator(address operator) external onlyOwner {
+    //     require(_operators[operator], "You're not operator");
+    //     _operators[operator] = false;
+    // }
 
     function setDevWalletAddress(address data) external onlyOwner {
         devWalletAddress = data;
@@ -257,11 +257,5 @@ contract NFTUpgradeableV2 is
             itemType,
             uint64(block.timestamp)
         );
-    }
-
-    function mint(address user) public {
-        _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
-        _mint(user, newTokenId);
     }
 }
