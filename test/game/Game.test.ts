@@ -42,7 +42,7 @@ describe("Game", async () => {
                 contract: GameContract.address,
             };
             const type = {
-                WithdrawTokenVoucherStruct: [
+                WithdrawTokenStruct: [
                     { name: "tokenAddress", type: "address" },
                     { name: "amount", type: "uint256" },
                     { name: "nonce", type: "string" },
@@ -359,7 +359,7 @@ describe("Game", async () => {
             contract: GameContract.address,
         };
         const types2 = {
-            WithdrawItemVoucherStruct: [
+            WithdrawItemStruct: [
                 { name: 'id', type: 'string' },
                 { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
@@ -401,7 +401,7 @@ describe("Game", async () => {
     //         contract: GameContract.address,
     //     };
     //     const types1 = {
-    //         WithdrawItemVoucherStruct: [
+    //         WithdrawItemStruct: [
     //             { name: 'id', type: 'string' },
     //             { name: "tokenAddress", type: "address" },
     //             { name: "tokenId", type: "uint256" },
