@@ -24,12 +24,13 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
 
     event DepositTokenEvent(
         address indexed user,
-        address indexed token,
+        address indexed tokenAddress,
         uint256 amount,
         uint64 timestamp
     );
 
     event DepositItemEvent(
+        string id,
         address indexed user,
         address indexed token,
         uint256 tokenId,
@@ -137,6 +138,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
     }
 
     function depositItem(
+        string calldata id,
         address token,
         uint256 tokenId,
         string calldata itemType
@@ -148,6 +150,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         );
 
         emit DepositItemEvent(
+            id,
             _msgSender(),
             token,
             tokenId,

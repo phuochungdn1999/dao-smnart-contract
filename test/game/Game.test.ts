@@ -294,7 +294,7 @@ describe("Game", async () => {
         await tx3.wait();
 
         // User deposit NFT to game smart contract
-        await GameContract.connect(user).depositItem(NFTContractV2.address, 1, 'box');
+        await GameContract.connect(user).depositItem('123', NFTContractV2.address, 1, 'box');
 
         const ownerTokenBefore = await NFTContractV2.ownerOf(1);
         expect(ownerTokenBefore).to.equal(GameContract.address);
@@ -350,7 +350,7 @@ describe("Game", async () => {
         await tx3.wait();
 
         // User deposit NFT to game smart contract
-        await GameContract.connect(user).depositItem(NFTContractV2.address, 1, 'box');
+        await GameContract.connect(user).depositItem('123', NFTContractV2.address, 1, 'box');
 
         // Create withdrawNFT voucher
         const nonce2 = uuidv4();
