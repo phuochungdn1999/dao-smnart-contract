@@ -56,7 +56,6 @@ contract NFTUpgradeable is
     }
 
     function __NFT_init_unchained() internal initializer {
-        _operators[_msgSender()] = true;
         devWalletAddress = _msgSender();
     }
 
