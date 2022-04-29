@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity >=0.8.0;
+
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -11,10 +13,10 @@ contract RUNNOWUpgradeable is
     OwnableUpgradeable,
     PausableUpgradeable
 {
-    uint256 public constant cap = 1_000_000_000 * 10**18;
+    uint256 public constant CAP = 1_000_000_000 * 10**18;
     address public constant BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
-    uint256 public _burnAmount;
+    uint256 public burnAmount;
 
     function initialize() public virtual initializer {
         __RUNNOW_init();
@@ -31,17 +33,17 @@ contract RUNNOWUpgradeable is
         _mint(_msgSender(), 1_000_000 * 10**18);
     }
 
-    function mint(address _to, uint256 _amount) external onlyOwner {
-        _mint(_to, _amount);
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
     }
 
-    function setBurnAmount(uint256 _amount) external onlyOwner {
-        _burnAmount = _amount;
+    function setBurnAmount(uint256 amount) external onlyOwner {
+        burnAmount = amount;
     }
 
-    function mintBurnToken(address _to) external onlyOwner {
-        require(totalSupply() + _burnAmount <= cap, "RUNNOW: Exceed cap"); // Address is zero
-        _mint(_to, _burnAmount);
-        _burnAmount = 0;
+    function mintBurnToken(address to) external onlyOwner {
+        require(totalSupply() + burnAmount <= CAP, "RUNNOW: Exceed cap"); // Address is zero
+        _mint(to, burnAmount);
+        burnAmount = 0;
     }
 }
