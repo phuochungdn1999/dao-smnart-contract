@@ -361,7 +361,7 @@ describe("Game", async () => {
         const types2 = {
             WithdrawItemVoucherStruct: [
                 { name: 'id', type: 'string' },
-                { name: 'tokenAddress', type: 'address' },
+                { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
                 { name: 'itemType', type: 'string' },
                 { name: 'nonce', type: 'string' },
@@ -370,7 +370,7 @@ describe("Game", async () => {
 
         const voucher2 = {
             id: '123',
-            tokenAddress: NFTContractV2.address,
+            itemAddress: NFTContractV2.address,
             tokenId: 1,
             itemType: 'box',
             nonce: nonce2,

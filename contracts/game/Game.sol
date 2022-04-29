@@ -5,10 +5,13 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
 import "../nft/NFTV2.sol";
 
 contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
+    using StringsUpgradeable for uint256;
+
     struct WithdrawTokenVoucherStruct {
         address tokenAddress;
         uint256 amount;
@@ -32,7 +35,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
     event DepositItemEvent(
         string id,
         address indexed user,
-        address indexed token,
+        address indexed itemAddress,
         uint256 tokenId,
         string itemType,
         uint64 timestamp
@@ -40,7 +43,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
 
     struct WithdrawItemVoucherStruct {
         string id;
-        address tokenAddress;
+        address itemAddress;
         uint256 tokenId;
         string itemType;
         string nonce;
@@ -170,14 +173,14 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         require(signer == owner(), "Signature invalid or unauthorized");
 
         if (voucher.tokenId == 0) {
-            NFTUpgradeableV2(voucher.tokenAddress).redeemCraftItem(
-                _msgSender(),
-                voucher.itemType,
-                voucher.nonce
-            );
+            // NFTUpgradeableV2(voucher.tokenAddress).redeemCraftItem(
+            //     _msgSender(),
+            //     voucher.itemType,
+            //     voucher.nonce
+            // );
         } else {
             // transfer from game to withdrawer
-            IERC721Upgradeable(voucher.tokenAddress).safeTransferFrom(
+            IERC721Upgradeable(voucher.itemAddress).safeTransferFrom(
                 address(this),
                 _msgSender(),
                 voucher.tokenId
@@ -212,10 +215,10 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawItemVoucherStruct(string id,address tokenAddress,uint256 tokenId,string itemType,string nonce)"
+                            "WithdrawItemVoucherStruct(string id,address itemAddress,uint256 tokenId,string itemType,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
-                        data.tokenAddress,
+                        data.itemAddress,
                         data.tokenId,
                         keccak256(bytes(data.itemType)),
                         keccak256(bytes(data.nonce))
