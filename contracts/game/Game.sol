@@ -179,15 +179,15 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
                 _msgSender(),
                 voucher.tokenId
             );
-
-            emit WithdrawItemEvent(
-                voucher.id,
-                _msgSender(),
-                voucher.itemType,
-                voucher.nonce,
-                uint64(block.timestamp)
-            );
         }
+
+        emit WithdrawItemEvent(
+            voucher.id,
+            _msgSender(),
+            voucher.itemType,
+            voucher.nonce,
+            uint64(block.timestamp)
+        );
     }
 
     function _verifyWithdrawItem(WithdrawItemVoucherStruct calldata voucher)
