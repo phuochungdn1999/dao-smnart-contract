@@ -32,6 +32,15 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         uint64 timestamp
     );
 
+    struct DepositItemStruct {
+        string id;
+        address itemAddress;
+        uint256 tokenId;
+        string itemType;
+        string nonce;
+        bytes signature;
+    }
+
     event DepositItemEvent(
         string id,
         address indexed user,
@@ -143,26 +152,61 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
             );
     }
 
-    function depositItem(
-        string memory id,
-        address itemAddress,
-        uint256 tokenId,
-        string memory itemType
-    ) public {
-        IERC721Upgradeable(itemAddress).transferFrom(
+    function depositItem(DepositItemStruct calldata data) public {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyDepositItem(data);
+        // Make sure that the signer is authorized to withdraw an item
+        require(signer == owner(), "Signature invalid or unauthorized");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        IERC721Upgradeable(data.itemAddress).transferFrom(
             _msgSender(),
             address(this),
-            tokenId
+            data.tokenId
         );
 
         emit DepositItemEvent(
-            id,
+            data.id,
             _msgSender(),
-            itemAddress,
-            tokenId,
-            itemType,
+            data.itemAddress,
+            data.tokenId,
+            data.itemType,
             uint64(block.timestamp)
         );
+    }
+
+    function _verifyDepositItem(DepositItemStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashDepositItem(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashDepositItem(DepositItemStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "DepositItemStruct(string id,address itemAddress,uint256 tokenId,string itemType,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        data.itemAddress,
+                        data.tokenId,
+                        keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
     }
 
     function withdrawItem(WithdrawItemStruct calldata data) public {
