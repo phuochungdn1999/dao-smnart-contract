@@ -12,26 +12,25 @@ import { createVoucher } from '../../utils/hashVoucher';
 
 let deployer: SignerWithAddress;
 let user: SignerWithAddress;
-let client: SignerWithAddress;
 let RUNNOWContract: Contract;
 let RUNGEMContract: Contract;
 let NFTContract: Contract;
 let GameContract: Contract;
 
-describe("Game", async () => {
+describe('Game', async () => {
     beforeEach(async () => {
-        [deployer, user, client] = await ethers.getSigners();
+        [deployer, user] = await ethers.getSigners();
         RUNNOWContract = await deployRUNNOWUpgradeable(deployer);
         RUNGEMContract = await deployRUNGEMUpgradeable(deployer);
         NFTContract = await deployNFTUpgradeable(deployer);
         GameContract = await deployGameUpgradeable(deployer);
     });
 
-    describe("Withdraw token", () => {
+    describe('Withdraw token', () => {
         beforeEach(async () => {
             await RUNNOWContract.connect(deployer).transfer(
                 GameContract.address,
-                ethers.utils.parseEther("10000")
+                ethers.utils.parseEther('10000')
             );
         });
 
@@ -43,14 +42,14 @@ describe("Game", async () => {
             };
             const type = {
                 WithdrawTokenStruct: [
-                    { name: "tokenAddress", type: "address" },
-                    { name: "amount", type: "uint256" },
-                    { name: "nonce", type: "string" },
+                    { name: 'tokenAddress', type: 'address' },
+                    { name: 'amount', type: 'uint256' },
+                    { name: 'nonce', type: 'string' },
                 ],
             };
             const voucher = {
                 tokenAddress: RUNNOWContract.address,
-                amount: ethers.utils.parseEther("100"),
+                amount: ethers.utils.parseEther('100'),
                 nonce: nonce,
             };
 
@@ -58,14 +57,14 @@ describe("Game", async () => {
             const balanceOfUserBefore = await RUNNOWContract.connect(user).balanceOf(
                 user.address
             );
-            expect(balanceOfUserBefore.toString()).to.equal("0");
+            expect(balanceOfUserBefore.toString()).to.equal('0');
             const tx = await GameContract.connect(user).withdrawToken(signature);
             await tx.wait();
             const balanceOfUserAfter = await RUNNOWContract.connect(user).balanceOf(
                 user.address
             );
             expect(balanceOfUserAfter.toString()).to.equal(
-                ethers.utils.parseEther("100").toString()
+                ethers.utils.parseEther('100').toString()
             );
         });
     });
@@ -99,8 +98,8 @@ describe("Game", async () => {
                     const balanceOfUserAfter = await RUNNOWContract.connect(user).balanceOf(user.address);
                     const balanceOfGameAfter = await RUNNOWContract.connect(user).balanceOf(GameContract.address);
 
-                    expect(balanceOfUserAfter.toString()).to.equal(ethers.utils.parseEther("700"));
-                    expect(balanceOfGameAfter.toString()).to.equal(ethers.utils.parseEther("300"));
+                    expect(balanceOfUserAfter.toString()).to.equal(ethers.utils.parseEther('700'));
+                    expect(balanceOfGameAfter.toString()).to.equal(ethers.utils.parseEther('300'));
                 });
             });
 
@@ -186,8 +185,8 @@ describe("Game", async () => {
                     const balanceOfUserAfter = await RUNGEMContract.connect(user).balanceOf(user.address);
                     const balanceOfGameAfter = await RUNGEMContract.connect(user).balanceOf(GameContract.address);
 
-                    expect(balanceOfUserAfter.toString()).to.equal(ethers.utils.parseEther("700"));
-                    expect(balanceOfGameAfter.toString()).to.equal(ethers.utils.parseEther("300"));
+                    expect(balanceOfUserAfter.toString()).to.equal(ethers.utils.parseEther('700'));
+                    expect(balanceOfGameAfter.toString()).to.equal(ethers.utils.parseEther('300'));
                 });
             });
 
@@ -246,7 +245,7 @@ describe("Game", async () => {
         });
     });
 
-    it("Deposit item", async () => {
+    it('Deposit item', async () => {
         // Upgrade
         const NFTContractV2 = await upgradeNFTUpgradeable(NFTContract.address, deployer);
 
@@ -384,49 +383,50 @@ describe("Game", async () => {
         const event = receipt.events?.filter((x: any) => {
             return x.event === 'WithdrawNFT';
         });
-        console.log('Event: ', event);
 
         const ownerToken = await NFTContractV2.ownerOf(1);
         expect(ownerToken).to.equal(user.address);
     });
 
-    // it("Craft item", async () => {
-    //     // Upgrade
-    //     const GameContract = await upgradeGameUpgradeable(GameContract.address, deployer);
-    //     const NFTContractV2 = await upgradeNFTUpgradeable(NFTContract.address, deployer);
+    it('Crafting item', async () => {
+        // Upgrade NFT Contract
+        const NFTContractV2 = await upgradeNFTUpgradeable(NFTContract.address, deployer);
 
-    //     const nonce1 = uuidv4();
-    //     const auth1 = {
-    //         signer: deployer,
-    //         contract: GameContract.address,
-    //     };
-    //     const types1 = {
-    //         WithdrawItemStruct: [
-    //             { name: 'id', type: 'string' },
-    //             { name: "tokenAddress", type: "address" },
-    //             { name: "tokenId", type: "uint256" },
-    //             { name: "nonce", type: "string" },
-    //             // { name: "itemType", type: "string" },
-    //         ],
-    //     };
-    //     const voucher1 = {
-    //         id: '123',
-    //         tokenAddress: NFTContractV2.address,
-    //         tokenId: 0,
-    //         nonce: nonce1,
-    //         // itemType: 'Box'
-    //     };
-    //     const signature1 = await createVoucher(types1, auth1, voucher1);
+        await NFTContractV2.connect(deployer).setGameAddress(GameContract.address);
 
-    //     // send voucher (with signature) to game contract to withdraw NFT
-    //     const tx3 = await GameContract.connect(user).withdrawItem(signature1);
-    //     const receipt = await tx3.wait();
-    //     const event = receipt.events?.filter((x: any) => {
-    //         return x.event === "WithdrawNFT";
-    //     });
-    //     console.log("event: ", event);
+        // Create withdrawNFT voucher
+        const nonce1 = uuidv4();
+        const auth1 = {
+            signer: deployer,
+            contract: GameContract.address,
+        };
+        const types1 = {
+            WithdrawItemStruct: [
+                { name: 'id', type: 'string' },
+                { name: 'itemAddress', type: 'address' },
+                { name: 'tokenId', type: 'uint256' },
+                { name: 'itemType', type: 'string' },
+                { name: 'nonce', type: 'string' },
+            ],
+        };
+        const voucher1 = {
+            id: '123',
+            itemAddress: NFTContractV2.address,
+            tokenId: 0,
+            itemType: 'box',
+            nonce: nonce1,
+        };
 
-    //     const ownerToken = await NFTContractV2.ownerOf(1);
-    //     expect(ownerToken).to.equal(user.address);
-    // });
+        const signature2 = await createVoucher(types1, auth1, voucher1);
+
+        // Send voucher (with signature) to game contract to withdraw NFT
+        const tx1 = await GameContract.connect(user).withdrawItem(signature2);
+        const receipt = await tx1.wait();
+        const event = receipt.events?.filter((x: any) => {
+            return x.event === 'WithdrawNFT';
+        });
+
+        const ownerToken = await NFTContractV2.ownerOf(1);
+        expect(ownerToken).to.equal(user.address);
+    });
 });

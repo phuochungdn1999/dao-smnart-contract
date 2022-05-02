@@ -52,12 +52,21 @@ contract NFTUpgradeableV2 is
         uint64 timestamp
     );
 
+    event MintFromGameEvent(
+        address indexed user,
+        string id,
+        string itemType,
+        uint256 tokenId,
+        uint64 timestamp
+    );
+
     string private constant _SIGNING_DOMAIN = "NFT-Voucher";
     string private constant _SIGNATURE_VERSION = "1";
 
     address public devWalletAddress;
     mapping(string => bool) private _noncesMap;
     CountersUpgradeable.Counter private _tokenIds;
+    address public gameAddress;
 
     function initialize() public virtual initializer {
         __NFT_init();
@@ -76,6 +85,10 @@ contract NFTUpgradeableV2 is
 
     function setDevWalletAddress(address data) external onlyOwner {
         devWalletAddress = data;
+    }
+
+    function setGameAddress(address data) external onlyOwner {
+        gameAddress = data;
     }
 
     function getCurrentId() public view returns (uint256) {
@@ -99,7 +112,7 @@ contract NFTUpgradeableV2 is
             data.price
         );
 
-        // Mint token
+        // Mint
         _tokenIds.increment();
         uint256 newTokenId = _tokenIds.current();
         _mint(_msgSender(), newTokenId);
@@ -204,5 +217,28 @@ contract NFTUpgradeableV2 is
                     )
                 )
             );
+    }
+
+    function mintFromGame(
+        address to,
+        string calldata id,
+        string calldata itemType
+    ) external returns (uint256) {
+        require(_msgSender() == gameAddress, "Unauthorized");
+
+        // Mint
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+        _mint(to, newTokenId);
+
+        emit MintFromGameEvent(
+            to,
+            id,
+            itemType,
+            newTokenId,
+            uint64(block.timestamp)
+        );
+
+        return newTokenId;
     }
 }
