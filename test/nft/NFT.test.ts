@@ -10,14 +10,15 @@ import { createVoucher } from '../../utils/hashVoucher';
 
 let deployer: SignerWithAddress;
 let user: SignerWithAddress;
-let NFTConstract: Contract;
+let game: SignerWithAddress;
+let NFTContract: Contract;
 let RUNNOWContract: Contract;
 
 describe('NFT', () => {
     beforeEach(async () => {
-        [deployer, user] = await ethers.getSigners();
+        [deployer, user, game] = await ethers.getSigners();
         RUNNOWContract = await deployRUNNOWUpgradeable(deployer);
-        NFTConstract = await deployNFTUpgradeable(deployer);
+        NFTContract = await deployNFTUpgradeable(deployer);
 
         await RUNNOWContract.connect(deployer).transfer(
             user.address,
@@ -28,13 +29,13 @@ describe('NFT', () => {
     it('Premint by token ERC-20', async () => {
         // Mint box
         await RUNNOWContract.connect(user).approve(
-            NFTConstract.address,
+            NFTContract.address,
             ethers.utils.parseEther('25')
         );
         const nonce = uuidv4();
         const auth = {
             signer: deployer,
-            contract: NFTConstract.address,
+            contract: NFTContract.address,
         };
         const types = {
             ItemVoucherStruct: [
@@ -53,7 +54,7 @@ describe('NFT', () => {
             nonce: nonce,
         };
         const signature = await createVoucher(types, auth, voucher);
-        const tx = await NFTConstract.connect(user).redeem(signature);
+        const tx = await NFTContract.connect(user).redeem(signature);
         const receipt = await tx.wait();
         const event = receipt.events?.filter((x: any) => {
             return x.event === 'RedeemEvent';
@@ -63,17 +64,17 @@ describe('NFT', () => {
     });
 
     it('Upgrade NFT contract and open box', async () => {
-        const NFTConstractV2 = await upgradeNFTUpgradeable(NFTConstract.address, deployer);
+        const NFTContractV2 = await upgradeNFTUpgradeable(NFTContract.address, deployer);
 
         // Mint box
         await RUNNOWContract.connect(user).approve(
-            NFTConstract.address,
+            NFTContract.address,
             ethers.utils.parseEther('25')
         );
         const nonce = uuidv4();
         const auth = {
             signer: deployer,
-            contract: NFTConstract.address,
+            contract: NFTContract.address,
         };
         const types = {
             ItemVoucherStruct: [
@@ -92,14 +93,14 @@ describe('NFT', () => {
             nonce: nonce,
         };
         const signature = await createVoucher(types, auth, voucher);
-        const tx = await NFTConstract.connect(user).redeem(signature);
+        const tx = await NFTContract.connect(user).redeem(signature);
         await tx.wait();
 
         // Open starter box
         const nonce2 = uuidv4();
         const auth2 = {
             signer: deployer,
-            contract: NFTConstract.address,
+            contract: NFTContract.address,
         };
         const types2 = {
             StarterBoxStruct: [
@@ -116,12 +117,27 @@ describe('NFT', () => {
             nonce: nonce2,
         };
         const signature2 = await createVoucher(types2, auth2, voucher2);
-        const tx2 = await NFTConstractV2.connect(user).openStarterBox(signature2);
+        const tx2 = await NFTContractV2.connect(user).openStarterBox(signature2);
         const receipt2 = await tx2.wait();
         const event2 = receipt2.events?.filter((x: any) => {
             return x.event === 'OpenStarterBoxEvent';
         });
 
         expect(event2[0].args.user).to.equal(user.address);
+    });
+
+    it('Upgrade NFT contract and mint from game', async () => {
+        const NFTContractV2 = await upgradeNFTUpgradeable(NFTContract.address, deployer);
+
+        await NFTContractV2.connect(deployer).setGameAddress(game.address);
+
+        // Mint from game
+        const tx1 = await NFTContractV2.connect(game).mintFromGame(user.address, '123', 'box');
+        const receipt1 = await tx1.wait();
+        const event1 = receipt1.events?.filter((x: any) => {
+            return x.event === 'MintFromGameEvent';
+        });
+
+        expect(event1[0].args.id).to.equal('123');
     });
 });

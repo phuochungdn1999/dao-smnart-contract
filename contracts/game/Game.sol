@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import "../interfaces/INFT.sol";
 
 contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
     using StringsUpgradeable for uint256;
@@ -175,11 +176,11 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         _noncesMap[data.nonce] = true;
 
         if (data.tokenId == 0) {
-            // INFT(data.tokenAddress).redeemCraftItem(
-            //     _msgSender(),
-            //     data.itemType,
-            //     data.nonce
-            // );
+            INFT(data.itemAddress).mintFromGame(
+                _msgSender(),
+                data.id,
+                data.itemType
+            );
         } else {
             IERC721Upgradeable(data.itemAddress).safeTransferFrom(
                 address(this),

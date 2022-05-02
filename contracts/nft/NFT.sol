@@ -84,7 +84,7 @@ contract NFTUpgradeable is
             data.price
         );
 
-        // Mint token
+        // Mint
         _tokenIds.increment();
         uint256 newTokenId = _tokenIds.current();
         _mint(_msgSender(), newTokenId);
