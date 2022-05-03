@@ -292,8 +292,34 @@ describe('Game', async () => {
         );
         await tx3.wait();
 
-        // User deposit NFT to game smart contract
-        await GameContract.connect(user).depositItem('123', NFTContractV2.address, 1, 'box');
+        // Create depositNFT voucher
+        const nonce2 = uuidv4();
+        const auth2 = {
+            signer: deployer,
+            contract: GameContract.address,
+        };
+        const types2 = {
+            DepositItemStruct: [
+                { name: 'id', type: 'string' },
+                { name: 'itemAddress', type: 'address' },
+                { name: 'tokenId', type: 'uint256' },
+                { name: 'itemType', type: 'string' },
+                { name: 'nonce', type: 'string' },
+            ],
+        };
+
+        const voucher2 = {
+            id: '123',
+            itemAddress: NFTContractV2.address,
+            tokenId: 1,
+            itemType: 'box',
+            nonce: nonce2,
+        };
+
+        const signature2 = await createVoucher(types2, auth2, voucher2);
+
+        // Send voucher (with signature) to game contract to deposit NFT
+        await GameContract.connect(user).depositItem(signature2);
 
         const ownerTokenBefore = await NFTContractV2.ownerOf(1);
         expect(ownerTokenBefore).to.equal(GameContract.address);
@@ -348,17 +374,14 @@ describe('Game', async () => {
         );
         await tx3.wait();
 
-        // User deposit NFT to game smart contract
-        await GameContract.connect(user).depositItem('123', NFTContractV2.address, 1, 'box');
-
-        // Create withdrawNFT voucher
+        // Create depositNFT voucher
         const nonce2 = uuidv4();
         const auth2 = {
             signer: deployer,
             contract: GameContract.address,
         };
         const types2 = {
-            WithdrawItemStruct: [
+            DepositItemStruct: [
                 { name: 'id', type: 'string' },
                 { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
@@ -377,8 +400,37 @@ describe('Game', async () => {
 
         const signature2 = await createVoucher(types2, auth2, voucher2);
 
+        // Send voucher (with signature) to game contract to deposit NFT
+        await GameContract.connect(user).depositItem(signature2);
+
+        // Create withdrawNFT voucher
+        const nonce3 = uuidv4();
+        const auth3 = {
+            signer: deployer,
+            contract: GameContract.address,
+        };
+        const types3 = {
+            WithdrawItemStruct: [
+                { name: 'id', type: 'string' },
+                { name: 'itemAddress', type: 'address' },
+                { name: 'tokenId', type: 'uint256' },
+                { name: 'itemType', type: 'string' },
+                { name: 'nonce', type: 'string' },
+            ],
+        };
+
+        const voucher3 = {
+            id: '123',
+            itemAddress: NFTContractV2.address,
+            tokenId: 1,
+            itemType: 'box',
+            nonce: nonce3,
+        };
+
+        const signature3 = await createVoucher(types3, auth3, voucher3);
+
         // Send voucher (with signature) to game contract to withdraw NFT
-        const tx2 = await GameContract.connect(user).withdrawItem(signature2);
+        const tx2 = await GameContract.connect(user).withdrawItem(signature3);
         const receipt = await tx2.wait();
         const event = receipt.events?.filter((x: any) => {
             return x.event === 'WithdrawNFT';
