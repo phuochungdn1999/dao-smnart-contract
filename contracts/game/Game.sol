@@ -155,7 +155,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
     function depositItem(DepositItemStruct calldata data) public {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyDepositItem(data);
-        // Make sure that the signer is authorized to withdraw an item
+        // Make sure that the signer is authorized to deposit an item
         require(signer == owner(), "Signature invalid or unauthorized");
 
         // Check nonce
