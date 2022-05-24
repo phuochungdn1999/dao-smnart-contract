@@ -27,20 +27,20 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
-    testnet: {
-      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
-      gas: 5000000,
-      chainId: 97,
-      accounts: {
-        mnemonic: process.env.MNEMONIC,
-      },
-    },
-    mainnet: {
+    bsc: {
       url: 'https://bsc-dataseed.binance.org',
       gas: 5000000,
       chainId: 56,
       accounts: {
-        mnemonic: process.env.MNEMONIC,
+        mnemonic: process.env.MNEMONIC_BSC,
+      },
+    },
+    bscTestnet: {
+      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      gas: 5000000,
+      chainId: 97,
+      accounts: {
+        mnemonic: process.env.MNEMONIC_BSC,
       },
     },
     avalanche: {
@@ -48,7 +48,7 @@ const config: HardhatUserConfig = {
       gas: 5000000,
       chainId: 43114,
       accounts: {
-        mnemonic: process.env.MNEMONIC_AVA,
+        mnemonic: process.env.MNEMONIC_AVAX,
       },
     },
     avalancheFujiTestnet: {
@@ -56,12 +56,17 @@ const config: HardhatUserConfig = {
       gas: 5000000,
       chainId: 43113,
       accounts: {
-        mnemonic: process.env.MNEMONIC_AVA,
+        mnemonic: process.env.MNEMONIC_AVAX,
       },
     },
   },
   etherscan: {
-    apiKey: process.env.BSC_API_KEY,
+    apiKey: {
+      bsc: process.env.BSC_API_KEY,
+      bscTestnet: process.env.BSC_API_KEY,
+      avalanche: process.env.SNOWTRACE_API_KEY,
+      avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY
+    }
   },
   gasReporter: {
     enabled: false,
