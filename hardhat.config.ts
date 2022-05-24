@@ -43,6 +43,22 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC,
       },
     },
+    avalanche: {
+      url: 'https://api.avax.network/ext/bc/C/rpc',
+      gas: 5000000,
+      chainId: 43114,
+      accounts: {
+        mnemonic: process.env.MNEMONIC_AVA,
+      },
+    },
+    avalancheFujiTestnet: {
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      gas: 5000000,
+      chainId: 43113,
+      accounts: {
+        mnemonic: process.env.MNEMONIC_AVA,
+      },
+    },
   },
   etherscan: {
     apiKey: process.env.BSC_API_KEY,
