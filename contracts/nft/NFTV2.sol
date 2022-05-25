@@ -33,6 +33,7 @@ contract NFTUpgradeableV2 is
         address indexed user,
         string id,
         string itemType,
+        string extraType,
         uint256 tokenId,
         string nonce,
         uint64 timestamp
@@ -57,6 +58,7 @@ contract NFTUpgradeableV2 is
         address indexed user,
         string id,
         string itemType,
+        string extraType,
         uint256 tokenId,
         uint64 timestamp
     );
@@ -122,6 +124,7 @@ contract NFTUpgradeableV2 is
             _msgSender(),
             data.id,
             data.itemType,
+            data.extraType,
             newTokenId,
             data.nonce,
             uint64(block.timestamp)
@@ -224,7 +227,8 @@ contract NFTUpgradeableV2 is
     function mintFromGame(
         address to,
         string calldata id,
-        string calldata itemType
+        string calldata itemType,
+        string calldata extraType
     ) external returns (uint256) {
         require(_msgSender() == gameAddress, "Unauthorized");
 
@@ -237,6 +241,7 @@ contract NFTUpgradeableV2 is
             to,
             id,
             itemType,
+            extraType,
             newTokenId,
             uint64(block.timestamp)
         );

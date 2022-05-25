@@ -229,7 +229,8 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
             INFT(data.itemAddress).mintFromGame(
                 _msgSender(),
                 data.id,
-                data.itemType
+                data.itemType,
+                data.extraType
             );
         } else {
             IERC721Upgradeable(data.itemAddress).safeTransferFrom(
