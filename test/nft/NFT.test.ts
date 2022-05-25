@@ -136,7 +136,7 @@ describe('NFT', () => {
         await NFTContractV2.connect(deployer).setGameAddress(game.address);
 
         // Mint from game
-        const tx1 = await NFTContractV2.connect(game).mintFromGame(user.address, '123', 'box');
+        const tx1 = await NFTContractV2.connect(game).mintFromGame(user.address, '123', 'box', '');
         const receipt1 = await tx1.wait();
         const event1 = receipt1.events?.filter((x: any) => {
             return x.event === 'MintFromGameEvent';
