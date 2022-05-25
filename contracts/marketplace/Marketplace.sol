@@ -27,7 +27,6 @@ contract MarketplaceUpgradeable is
         address itemAddress;
         address owner;
         uint256 price;
-        address priceTokenAddress;
         bool isExist;
     }
 
@@ -38,7 +37,6 @@ contract MarketplaceUpgradeable is
         uint256 tokenId;
         address itemAddress;
         uint256 price;
-        address priceTokenAddress;
         string nonce;
         bytes signature;
     }
@@ -50,7 +48,6 @@ contract MarketplaceUpgradeable is
         uint256 tokenId,
         address owner,
         uint256 price,
-        address priceTokenAddress,
         uint64 timestamp
     );
 
@@ -61,7 +58,6 @@ contract MarketplaceUpgradeable is
         uint256 tokenId,
         address owner,
         uint256 price,
-        address priceTokenAddress,
         address buyer,
         uint64 timestamp
     );
@@ -133,7 +129,6 @@ contract MarketplaceUpgradeable is
             tokenId: data.tokenId,
             owner: _msgSender(),
             price: data.price,
-            priceTokenAddress: data.priceTokenAddress,
             isExist: true
         });
 
@@ -144,7 +139,6 @@ contract MarketplaceUpgradeable is
             data.tokenId,
             _msgSender(),
             data.price,
-            data.priceTokenAddress,
             uint64(block.timestamp)
         );
     }
@@ -168,7 +162,7 @@ contract MarketplaceUpgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "OrderItemStruct(string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256 price,address priceTokenAddress,string nonce)"
+                            "OrderItemStruct(string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256 price,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
@@ -176,7 +170,6 @@ contract MarketplaceUpgradeable is
                         data.tokenId,
                         data.itemAddress,
                         data.price,
-                        data.priceTokenAddress,
                         keccak256(bytes(data.nonce))
                     )
                 )
@@ -194,28 +187,16 @@ contract MarketplaceUpgradeable is
         ItemStruct memory item = itemsMap[id];
 
         // Transfer payment
-        require(
-            IERC20Upgradeable(item.priceTokenAddress).balanceOf(_msgSender()) >=
-                item.price,
-            "Not enough money"
-        );
+        require(msg.value >= item.price, "Not enough money");
 
         uint256 totalFeesShareAmount = (item.price *
             feesCollectorCutPerMillion) / 1_000_000;
 
         if (totalFeesShareAmount > 0) {
-            IERC20Upgradeable(item.priceTokenAddress).transferFrom(
-                _msgSender(),
-                feesCollectorAddress,
-                totalFeesShareAmount
-            );
+            payable(feesCollectorAddress).transfer(totalFeesShareAmount);
         }
 
-        IERC20Upgradeable(item.priceTokenAddress).transferFrom(
-            _msgSender(),
-            item.owner,
-            item.price - totalFeesShareAmount
-        );
+        payable(item.owner).transfer(item.price - totalFeesShareAmount);
 
         IERC721Upgradeable(item.itemAddress).transferFrom(
             address(this),
@@ -230,7 +211,6 @@ contract MarketplaceUpgradeable is
             item.tokenId,
             item.owner,
             item.price,
-            item.priceTokenAddress,
             _msgSender(),
             uint64(block.timestamp)
         );

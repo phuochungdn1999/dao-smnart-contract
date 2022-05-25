@@ -80,9 +80,6 @@ describe('Game', async () => {
                 });
 
                 it('updates right balance of user and balance of game', async () => {
-                    const balanceOfUserBefore = await RUNNOWContract.connect(user).balanceOf(user.address);
-                    const balanceOfGameBefore = await RUNNOWContract.connect(user).balanceOf(GameContract.address);
-
                     let tx = await RUNNOWContract.connect(user).approve(
                         GameContract.address,
                         ethers.utils.parseEther('1000')
@@ -106,13 +103,6 @@ describe('Game', async () => {
             context('when error', async () => {
                 context('when user balance equal 0', async () => {
                     it('returns transfer amount exceeds balance', async () => {
-                        const balanceOfUserBefore = await RUNNOWContract.connect(user).balanceOf(
-                            user.address
-                        );
-                        const balanceOfGameBefore = await RUNNOWContract.connect(user).balanceOf(
-                            GameContract.address
-                        );
-
                         let tx = await RUNNOWContract.connect(user).approve(
                             GameContract.address,
                             ethers.utils.parseEther('1000')
@@ -135,13 +125,6 @@ describe('Game', async () => {
                     });
 
                     it('returns amount must greater than zero', async () => {
-                        const balanceOfUserBefore = await RUNNOWContract.connect(user).balanceOf(
-                            user.address
-                        );
-                        const balanceOfGameBefore = await RUNNOWContract.connect(user).balanceOf(
-                            GameContract.address
-                        );
-
                         let tx = await RUNNOWContract.connect(user).approve(
                             GameContract.address,
                             ethers.utils.parseEther('1000')
@@ -167,9 +150,6 @@ describe('Game', async () => {
                 });
 
                 it('updates right balance of user and balance of game', async () => {
-                    const balanceOfUserBefore = await RUNGEMContract.connect(user).balanceOf(user.address);
-                    const balanceOfGameBefore = await RUNGEMContract.connect(user).balanceOf(GameContract.address);
-
                     let tx = await RUNGEMContract.connect(user).approve(
                         GameContract.address,
                         ethers.utils.parseEther('1000')
@@ -193,13 +173,6 @@ describe('Game', async () => {
             context('when error', async () => {
                 context('when user balance equal 0', async () => {
                     it('returns transfer amount exceeds balance', async () => {
-                        const balanceOfUserBefore = await RUNGEMContract.connect(user).balanceOf(
-                            user.address
-                        );
-                        const balanceOfGameBefore = await RUNGEMContract.connect(user).balanceOf(
-                            GameContract.address
-                        );
-
                         let tx = await RUNGEMContract.connect(user).approve(
                             GameContract.address,
                             ethers.utils.parseEther('1000')
@@ -222,13 +195,6 @@ describe('Game', async () => {
                     });
 
                     it('returns amount must greater than zero', async () => {
-                        const balanceOfUserBefore = await RUNGEMContract.connect(user).balanceOf(
-                            user.address
-                        );
-                        const balanceOfGameBefore = await RUNGEMContract.connect(user).balanceOf(
-                            GameContract.address
-                        );
-
                         let tx = await RUNGEMContract.connect(user).approve(
                             GameContract.address,
                             ethers.utils.parseEther('1000')
@@ -248,7 +214,6 @@ describe('Game', async () => {
     it('Deposit item', async () => {
         // Upgrade
         const NFTContractV2 = await upgradeNFTUpgradeable(NFTContract.address, deployer);
-
 
         await RUNNOWContract.connect(deployer).transfer(
             user.address,
@@ -271,7 +236,6 @@ describe('Game', async () => {
                 { name: 'itemType', type: 'string' },
                 { name: 'extraType', type: 'string' },
                 { name: 'price', type: 'uint256' },
-                { name: 'priceTokenAddress', type: 'address' },
                 { name: 'nonce', type: 'string' },
             ],
         };
@@ -280,11 +244,12 @@ describe('Game', async () => {
             itemType: 'box',
             extraType: '',
             price: ethers.utils.parseEther('25'),
-            priceTokenAddress: RUNNOWContract.address,
             nonce: nonce1,
         };
         const signature1 = await createVoucher(types1, auth1, voucher1);
-        const tx1 = await NFTContractV2.connect(user).redeem(signature1);
+        const tx1 = await NFTContractV2.connect(user).redeem(signature1, {
+            value: ethers.utils.parseEther('25')
+        });
         await tx1.wait();
 
         // Approve NFT of user to game contract
@@ -354,7 +319,6 @@ describe('Game', async () => {
                 { name: 'itemType', type: 'string' },
                 { name: 'extraType', type: 'string' },
                 { name: 'price', type: 'uint256' },
-                { name: 'priceTokenAddress', type: 'address' },
                 { name: 'nonce', type: 'string' },
             ],
         };
@@ -363,11 +327,12 @@ describe('Game', async () => {
             itemType: 'box',
             extraType: '',
             price: ethers.utils.parseEther('25'),
-            priceTokenAddress: RUNNOWContract.address,
             nonce: nonce1,
         };
         const signature1 = await createVoucher(types1, auth1, voucher1);
-        const tx1 = await NFTContractV2.connect(user).redeem(signature1);
+        const tx1 = await NFTContractV2.connect(user).redeem(signature1, {
+            value: ethers.utils.parseEther('25')
+        });
         await tx1.wait();
 
         const ownerTokenBefore = await NFTContractV2.ownerOf(1);
@@ -441,10 +406,7 @@ describe('Game', async () => {
 
         // Send voucher (with signature) to game contract to withdraw NFT
         const tx2 = await GameContract.connect(user).withdrawItem(signature3);
-        const receipt = await tx2.wait();
-        const event = receipt.events?.filter((x: any) => {
-            return x.event === 'WithdrawNFT';
-        });
+        await tx2.wait();
 
         const ownerToken = await NFTContractV2.ownerOf(1);
         expect(ownerToken).to.equal(user.address);
@@ -485,10 +447,7 @@ describe('Game', async () => {
 
         // Send voucher (with signature) to game contract to withdraw NFT
         const tx1 = await GameContract.connect(user).withdrawItem(signature2);
-        const receipt = await tx1.wait();
-        const event = receipt.events?.filter((x: any) => {
-            return x.event === 'WithdrawNFT';
-        });
+        await tx1.wait();
 
         const ownerToken = await NFTContractV2.ownerOf(1);
         expect(ownerToken).to.equal(user.address);
