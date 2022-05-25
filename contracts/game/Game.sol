@@ -37,6 +37,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         address itemAddress;
         uint256 tokenId;
         string itemType;
+        string extraType;
         string nonce;
         bytes signature;
     }
@@ -47,6 +48,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         address itemAddress,
         uint256 tokenId,
         string itemType,
+        string extraType,
         uint64 timestamp
     );
 
@@ -55,6 +57,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         address itemAddress;
         uint256 tokenId;
         string itemType;
+        string extraType;
         string nonce;
         bytes signature;
     }
@@ -63,6 +66,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         string id,
         address indexed user,
         string itemType,
+        string extraType,
         string nonce,
         uint64 timestamp
     );
@@ -174,6 +178,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
             data.itemAddress,
             data.tokenId,
             data.itemType,
+            data.extraType,
             uint64(block.timestamp)
         );
     }
@@ -197,12 +202,13 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "DepositItemStruct(string id,address itemAddress,uint256 tokenId,string itemType,string nonce)"
+                            "DepositItemStruct(string id,address itemAddress,uint256 tokenId,string itemType,string extraType,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         data.itemAddress,
                         data.tokenId,
                         keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.extraType)),
                         keccak256(bytes(data.nonce))
                     )
                 )
@@ -223,7 +229,8 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
             INFT(data.itemAddress).mintFromGame(
                 _msgSender(),
                 data.id,
-                data.itemType
+                data.itemType,
+                data.extraType
             );
         } else {
             IERC721Upgradeable(data.itemAddress).safeTransferFrom(
@@ -237,6 +244,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
             data.id,
             _msgSender(),
             data.itemType,
+            data.extraType,
             data.nonce,
             uint64(block.timestamp)
         );
@@ -261,12 +269,13 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawItemStruct(string id,address itemAddress,uint256 tokenId,string itemType,string nonce)"
+                            "WithdrawItemStruct(string id,address itemAddress,uint256 tokenId,string itemType,string extraType,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         data.itemAddress,
                         data.tokenId,
                         keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.extraType)),
                         keccak256(bytes(data.nonce))
                     )
                 )
