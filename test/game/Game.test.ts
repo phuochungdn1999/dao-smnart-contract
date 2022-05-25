@@ -269,6 +269,7 @@ describe('Game', async () => {
             ItemVoucherStruct: [
                 { name: 'id', type: 'string' },
                 { name: 'itemType', type: 'string' },
+                { name: 'extraType', type: 'string' },
                 { name: 'price', type: 'uint256' },
                 { name: 'priceTokenAddress', type: 'address' },
                 { name: 'nonce', type: 'string' },
@@ -277,6 +278,7 @@ describe('Game', async () => {
         const voucher1 = {
             id: '123',
             itemType: 'box',
+            extraType: '',
             price: ethers.utils.parseEther('25'),
             priceTokenAddress: RUNNOWContract.address,
             nonce: nonce1,
@@ -304,6 +306,7 @@ describe('Game', async () => {
                 { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
                 { name: 'itemType', type: 'string' },
+                { name: 'extraType', type: 'string' },
                 { name: 'nonce', type: 'string' },
             ],
         };
@@ -313,6 +316,7 @@ describe('Game', async () => {
             itemAddress: NFTContractV2.address,
             tokenId: 1,
             itemType: 'box',
+            extraType: '',
             nonce: nonce2,
         };
 
@@ -348,6 +352,7 @@ describe('Game', async () => {
             ItemVoucherStruct: [
                 { name: 'id', type: 'string' },
                 { name: 'itemType', type: 'string' },
+                { name: 'extraType', type: 'string' },
                 { name: 'price', type: 'uint256' },
                 { name: 'priceTokenAddress', type: 'address' },
                 { name: 'nonce', type: 'string' },
@@ -356,6 +361,7 @@ describe('Game', async () => {
         const voucher1 = {
             id: '123',
             itemType: 'box',
+            extraType: '',
             price: ethers.utils.parseEther('25'),
             priceTokenAddress: RUNNOWContract.address,
             nonce: nonce1,
@@ -386,6 +392,7 @@ describe('Game', async () => {
                 { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
                 { name: 'itemType', type: 'string' },
+                { name: 'extraType', type: 'string' },
                 { name: 'nonce', type: 'string' },
             ],
         };
@@ -395,6 +402,7 @@ describe('Game', async () => {
             itemAddress: NFTContractV2.address,
             tokenId: 1,
             itemType: 'box',
+            extraType: '',
             nonce: nonce2,
         };
 
@@ -415,6 +423,7 @@ describe('Game', async () => {
                 { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
                 { name: 'itemType', type: 'string' },
+                { name: 'extraType', type: 'string' },
                 { name: 'nonce', type: 'string' },
             ],
         };
@@ -424,6 +433,7 @@ describe('Game', async () => {
             itemAddress: NFTContractV2.address,
             tokenId: 1,
             itemType: 'box',
+            extraType: '',
             nonce: nonce3,
         };
 
@@ -458,6 +468,7 @@ describe('Game', async () => {
                 { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
                 { name: 'itemType', type: 'string' },
+                { name: 'extraType', type: 'string' },
                 { name: 'nonce', type: 'string' },
             ],
         };
@@ -466,6 +477,7 @@ describe('Game', async () => {
             itemAddress: NFTContractV2.address,
             tokenId: 0,
             itemType: 'box',
+            extraType: '',
             nonce: nonce1,
         };
 

@@ -22,6 +22,7 @@ contract NFTUpgradeableV2 is
     struct ItemVoucherStruct {
         string id;
         string itemType;
+        string extraType;
         uint256 price;
         address priceTokenAddress;
         string nonce;
@@ -146,10 +147,11 @@ contract NFTUpgradeableV2 is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ItemVoucherStruct(string id,string itemType,uint256 price,address priceTokenAddress,string nonce)"
+                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,address priceTokenAddress,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.extraType)),
                         data.price,
                         data.priceTokenAddress,
                         keccak256(bytes(data.nonce))

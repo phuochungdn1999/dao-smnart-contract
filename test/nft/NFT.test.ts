@@ -41,6 +41,7 @@ describe('NFT', () => {
             ItemVoucherStruct: [
                 { name: 'id', type: 'string' },
                 { name: 'itemType', type: 'string' },
+                { name: 'extraType', type: 'string' },
                 { name: 'price', type: 'uint256' },
                 { name: 'priceTokenAddress', type: 'address' },
                 { name: 'nonce', type: 'string' },
@@ -49,6 +50,7 @@ describe('NFT', () => {
         const voucher = {
             id: '123',
             itemType: 'box',
+            extraType: '',
             price: ethers.utils.parseEther('25'),
             priceTokenAddress: RUNNOWContract.address,
             nonce: nonce,
@@ -80,6 +82,7 @@ describe('NFT', () => {
             ItemVoucherStruct: [
                 { name: 'id', type: 'string' },
                 { name: 'itemType', type: 'string' },
+                { name: 'extraType', type: 'string' },
                 { name: 'price', type: 'uint256' },
                 { name: 'priceTokenAddress', type: 'address' },
                 { name: 'nonce', type: 'string' },
@@ -88,6 +91,7 @@ describe('NFT', () => {
         const voucher = {
             id: '123',
             itemType: 'box',
+            extraType: '',
             price: ethers.utils.parseEther('25'),
             priceTokenAddress: RUNNOWContract.address,
             nonce: nonce,

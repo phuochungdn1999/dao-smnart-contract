@@ -22,6 +22,7 @@ contract MarketplaceUpgradeable is
     struct ItemStruct {
         string id;
         string itemType;
+        string extraType;
         uint256 tokenId;
         address itemAddress;
         address owner;
@@ -33,6 +34,7 @@ contract MarketplaceUpgradeable is
     struct OrderItemStruct {
         string id;
         string itemType;
+        string extraType;
         uint256 tokenId;
         address itemAddress;
         uint256 price;
@@ -44,6 +46,7 @@ contract MarketplaceUpgradeable is
     event OfferEvent(
         string id,
         string itemType,
+        string extraType,
         uint256 tokenId,
         address owner,
         uint256 price,
@@ -54,6 +57,7 @@ contract MarketplaceUpgradeable is
     event BuyEvent(
         string id,
         string itemType,
+        string extraType,
         uint256 tokenId,
         address owner,
         uint256 price,
@@ -65,6 +69,7 @@ contract MarketplaceUpgradeable is
     event WithdrawEvent(
         string id,
         string itemType,
+        string extraType,
         uint256 tokenId,
         address owner,
         uint64 timestamp
@@ -123,6 +128,7 @@ contract MarketplaceUpgradeable is
         itemsMap[data.id] = ItemStruct({
             id: data.id,
             itemType: data.itemType,
+            extraType: data.extraType,
             itemAddress: data.itemAddress,
             tokenId: data.tokenId,
             owner: _msgSender(),
@@ -134,6 +140,7 @@ contract MarketplaceUpgradeable is
         emit OfferEvent(
             data.id,
             data.itemType,
+            data.extraType,
             data.tokenId,
             _msgSender(),
             data.price,
@@ -161,10 +168,11 @@ contract MarketplaceUpgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "OrderItemStruct(string id,string itemType,uint256 tokenId,address itemAddress,uint256 price,address priceTokenAddress,string nonce)"
+                            "OrderItemStruct(string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256 price,address priceTokenAddress,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.extraType)),
                         data.tokenId,
                         data.itemAddress,
                         data.price,
@@ -218,6 +226,7 @@ contract MarketplaceUpgradeable is
         emit BuyEvent(
             item.id,
             item.itemType,
+            item.extraType,
             item.tokenId,
             item.owner,
             item.price,
@@ -243,6 +252,7 @@ contract MarketplaceUpgradeable is
         emit WithdrawEvent(
             item.id,
             item.itemType,
+            item.extraType,
             item.tokenId,
             item.owner,
             uint64(block.timestamp)

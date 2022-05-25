@@ -45,6 +45,7 @@ describe('Marketplace', async () => {
                 ItemVoucherStruct: [
                     { name: 'id', type: 'string' },
                     { name: 'itemType', type: 'string' },
+                    { name: 'extraType', type: 'string' },
                     { name: 'price', type: 'uint256' },
                     { name: 'priceTokenAddress', type: 'address' },
                     { name: 'nonce', type: 'string' },
@@ -53,6 +54,7 @@ describe('Marketplace', async () => {
             const voucher1 = {
                 id: '123',
                 itemType: 'box',
+                extraType: '',
                 price: ethers.utils.parseEther('25'),
                 priceTokenAddress: RUNNOWContract.address,
                 nonce: nonce1,
@@ -76,6 +78,7 @@ describe('Marketplace', async () => {
                 OrderItemStruct: [
                     { name: 'id', type: 'string' },
                     { name: 'itemType', type: 'string' },
+                    { name: 'extraType', type: 'string' },
                     { name: 'tokenId', type: 'uint256' },
                     { name: 'itemAddress', type: 'address' },
                     { name: 'price', type: 'uint256' },
@@ -86,6 +89,7 @@ describe('Marketplace', async () => {
             const orderItem2 = {
                 id: '123',
                 itemType: 'box',
+                extraType: '',
                 tokenId: BigNumber.from(1),
                 itemAddress: NFTContract.address,
                 price: ethers.utils.parseEther('100'),
@@ -123,6 +127,7 @@ describe('Marketplace', async () => {
                 ItemVoucherStruct: [
                     { name: 'id', type: 'string' },
                     { name: 'itemType', type: 'string' },
+                    { name: 'extraType', type: 'string' },
                     { name: 'price', type: 'uint256' },
                     { name: 'priceTokenAddress', type: 'address' },
                     { name: 'nonce', type: 'string' },
@@ -131,6 +136,7 @@ describe('Marketplace', async () => {
             const voucher1 = {
                 id: '123',
                 itemType: 'box',
+                extraType: '',
                 price: ethers.utils.parseEther('25'),
                 priceTokenAddress: RUNNOWContract.address,
                 nonce: nonce1,
@@ -154,6 +160,7 @@ describe('Marketplace', async () => {
                 OrderItemStruct: [
                     { name: 'id', type: 'string' },
                     { name: 'itemType', type: 'string' },
+                    { name: 'extraType', type: 'string' },
                     { name: 'tokenId', type: 'uint256' },
                     { name: 'itemAddress', type: 'address' },
                     { name: 'price', type: 'uint256' },
@@ -164,6 +171,7 @@ describe('Marketplace', async () => {
             const orderItem2 = {
                 id: '123',
                 itemType: 'box',
+                extraType: '',
                 tokenId: BigNumber.from(1),
                 itemAddress: NFTContract.address,
                 price: ethers.utils.parseEther('100'),
@@ -223,6 +231,7 @@ describe('Marketplace', async () => {
                     ItemVoucherStruct: [
                         { name: 'id', type: 'string' },
                         { name: 'itemType', type: 'string' },
+                        { name: 'extraType', type: 'string' },
                         { name: 'price', type: 'uint256' },
                         { name: 'priceTokenAddress', type: 'address' },
                         { name: 'nonce', type: 'string' },
@@ -231,6 +240,7 @@ describe('Marketplace', async () => {
                 const voucher1 = {
                     id: '123',
                     itemType: 'box',
+                    extraType: '',
                     price: ethers.utils.parseEther('25'),
                     priceTokenAddress: RUNNOWContract.address,
                     nonce: nonce1,
@@ -254,6 +264,7 @@ describe('Marketplace', async () => {
                     OrderItemStruct: [
                         { name: 'id', type: 'string' },
                         { name: 'itemType', type: 'string' },
+                        { name: 'extraType', type: 'string' },
                         { name: 'tokenId', type: 'uint256' },
                         { name: 'itemAddress', type: 'address' },
                         { name: 'price', type: 'uint256' },
@@ -264,6 +275,7 @@ describe('Marketplace', async () => {
                 const orderItem2 = {
                     id: '123',
                     itemType: 'box',
+                    extraType: '',
                     tokenId: BigNumber.from(1),
                     itemAddress: NFTContract.address,
                     price: ethers.utils.parseEther('100'),
