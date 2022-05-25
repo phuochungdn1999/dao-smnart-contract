@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract NFTUpgradeableV2 is
@@ -24,7 +23,6 @@ contract NFTUpgradeableV2 is
         string itemType;
         string extraType;
         uint256 price;
-        address priceTokenAddress;
         string nonce;
         bytes signature;
     }
@@ -109,11 +107,8 @@ contract NFTUpgradeableV2 is
         _noncesMap[data.nonce] = true;
 
         // Transfer payment
-        ERC20Upgradeable(data.priceTokenAddress).transferFrom(
-            _msgSender(),
-            devWalletAddress,
-            data.price
-        );
+        require(msg.value >= data.price, "Not enough money");
+        payable(devWalletAddress).transfer(msg.value);
 
         // Mint
         _tokenIds.increment();
@@ -150,13 +145,12 @@ contract NFTUpgradeableV2 is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,address priceTokenAddress,string nonce)"
+                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
                         keccak256(bytes(data.extraType)),
                         data.price,
-                        data.priceTokenAddress,
                         keccak256(bytes(data.nonce))
                     )
                 )
