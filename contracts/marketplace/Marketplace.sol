@@ -192,10 +192,13 @@ contract MarketplaceUpgradeable is
             feesCollectorCutPerMillion) / 1_000_000;
 
         if (totalFeesShareAmount > 0) {
-            payable(feesCollectorAddress).transfer(totalFeesShareAmount);
+            (bool success, ) = feesCollectorAddress.call{value:totalFeesShareAmount}("");
+            require(success, "Transfer fee failed");
         }
 
-        payable(item.owner).transfer(item.price - totalFeesShareAmount);
+        uint256 ownerShareAmount = item.price - totalFeesShareAmount;
+        (bool success, ) = item.owner.call{value: ownerShareAmount}("");
+        require(success, "Transfer money failed");
 
         IERC721Upgradeable(item.itemAddress).transferFrom(
             address(this),
