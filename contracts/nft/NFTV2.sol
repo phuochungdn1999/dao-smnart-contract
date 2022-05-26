@@ -108,7 +108,8 @@ contract NFTUpgradeableV2 is
 
         // Transfer payment
         require(msg.value >= data.price, "Not enough money");
-        payable(devWalletAddress).transfer(msg.value);
+        (bool success, ) = devWalletAddress.call{value: msg.value}("");
+        require(success, "Transfer payment failed");
 
         // Mint
         _tokenIds.increment();
