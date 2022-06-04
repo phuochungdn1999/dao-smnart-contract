@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +9,7 @@ import deployGameUpgradeable from '../../scripts/game/deployGame';
 import deployNFTUpgradeable from '../../scripts/nft/deployNFT';
 import upgradeNFTUpgradeable from '../../scripts/nft/upgradeNFT';
 import { createVoucher } from '../../utils/hashVoucher';
+const provider = ethers.getDefaultProvider();
 
 let deployer: SignerWithAddress;
 let user: SignerWithAddress;
@@ -34,7 +35,7 @@ describe('Game', async () => {
             );
         });
 
-        it('returns right data', async () => {
+        it('returns right data - erc20 token', async () => {
             const nonce = uuidv4();
             const auth = {
                 signer: deployer,
@@ -42,12 +43,16 @@ describe('Game', async () => {
             };
             const type = {
                 WithdrawTokenStruct: [
+                    { name: 'walletAddress', type: 'address' },
+                    { name: 'isNativeToken', type: 'bool' },
                     { name: 'tokenAddress', type: 'address' },
                     { name: 'amount', type: 'uint256' },
                     { name: 'nonce', type: 'string' },
                 ],
             };
             const voucher = {
+                walletAddress: user.address,
+                isNativeToken: false,
                 tokenAddress: RUNNOWContract.address,
                 amount: ethers.utils.parseEther('100'),
                 nonce: nonce,
@@ -66,6 +71,44 @@ describe('Game', async () => {
             expect(balanceOfUserAfter.toString()).to.equal(
                 ethers.utils.parseEther('100').toString()
             );
+        });
+
+        it('returns right data - native token', async () => {
+            const tx1 = await GameContract.connect(user).depositNativeToken(ethers.utils.parseEther('5'), {
+                value: ethers.utils.parseEther('5')
+            });
+            await tx1.wait();
+
+            const nonce = uuidv4();
+            const auth = {
+                signer: deployer,
+                contract: GameContract.address,
+            };
+            const type = {
+                WithdrawTokenStruct: [
+                    { name: 'walletAddress', type: 'address' },
+                    { name: 'isNativeToken', type: 'bool' },
+                    { name: 'tokenAddress', type: 'address' },
+                    { name: 'amount', type: 'uint256' },
+                    { name: 'nonce', type: 'string' },
+                ],
+            };
+            const voucher = {
+                walletAddress: user.address,
+                isNativeToken: true,
+                tokenAddress: RUNGEMContract.address,
+                amount: ethers.utils.parseEther('5'),
+                nonce: nonce,
+            };
+
+            const signature = await createVoucher(type, auth, voucher);
+            const balanceOfUserBefore = await provider.getBalance(user.address);
+            const tx = await GameContract.connect(user).withdrawToken(signature);
+            await tx.wait();
+            const balanceOfUserAfter = await provider.getBalance(user.address);
+            const diff = balanceOfUserAfter.sub(balanceOfUserBefore);
+
+            assert(diff.lt(ethers.utils.parseEther('4.8')));
         });
     });
 
@@ -87,8 +130,8 @@ describe('Game', async () => {
                     await tx.wait();
 
                     tx = await GameContract.connect(user).depositToken(
-                        RUNNOWContract.address,
-                        ethers.utils.parseEther('300')
+                        ethers.utils.parseEther('300'),
+                        RUNNOWContract.address
                     );
                     await tx.wait();
 
@@ -110,8 +153,8 @@ describe('Game', async () => {
                         await tx.wait();
 
                         await expect(GameContract.connect(user).depositToken(
-                            RUNNOWContract.address,
-                            ethers.utils.parseEther('300')
+                            ethers.utils.parseEther('300'),
+                            RUNNOWContract.address
                         )).to.be.revertedWith('ERC20: transfer amount exceeds balance');
                     });
                 });
@@ -132,9 +175,9 @@ describe('Game', async () => {
                         await tx.wait();
 
                         await expect(GameContract.connect(user).depositToken(
+                            ethers.utils.parseEther('0'),
                             RUNNOWContract.address,
-                            ethers.utils.parseEther('0')
-                        )).to.be.revertedWith('Amount must greater than zero');
+                        )).to.be.revertedWith('Amount must be greater than zero');
                     });
                 });
             });
@@ -157,8 +200,8 @@ describe('Game', async () => {
                     await tx.wait();
 
                     tx = await GameContract.connect(user).depositToken(
-                        RUNGEMContract.address,
-                        ethers.utils.parseEther('300')
+                        ethers.utils.parseEther('300'),
+                        RUNGEMContract.address
                     );
                     await tx.wait();
 
@@ -180,8 +223,8 @@ describe('Game', async () => {
                         await tx.wait();
 
                         await expect(GameContract.connect(user).depositToken(
-                            RUNGEMContract.address,
-                            ethers.utils.parseEther('300')
+                            ethers.utils.parseEther('300'),
+                            RUNGEMContract.address
                         )).to.be.revertedWith('ERC20: transfer amount exceeds balance');
                     });
                 });
@@ -202,10 +245,26 @@ describe('Game', async () => {
                         await tx.wait();
 
                         await expect(GameContract.connect(user).depositToken(
-                            RUNGEMContract.address,
-                            ethers.utils.parseEther('0')
-                        )).to.be.revertedWith('Amount must greater than zero');
+                            ethers.utils.parseEther('0'),
+                            RUNGEMContract.address
+                        )).to.be.revertedWith('Amount must be greater than zero');
                     });
+                });
+            });
+        });
+
+        context('when deposit NATIVE token', async () => {
+            context('when success', async () => {
+                it('updates right balance of user and balance of game', async () => {
+                    const balanceOfUserBefore = await provider.getBalance(user.address);
+                    let tx = await GameContract.connect(user).depositNativeToken(ethers.utils.parseEther('5'), {
+                        value: ethers.utils.parseEther('5')
+                    });
+                    await tx.wait();
+                    const balanceOfUserAfter = await provider.getBalance(user.address);
+                    const diff = balanceOfUserBefore.sub(balanceOfUserAfter);
+
+                    assert(diff.lt(ethers.utils.parseEther('4.8')));
                 });
             });
         });
@@ -384,6 +443,7 @@ describe('Game', async () => {
         };
         const types3 = {
             WithdrawItemStruct: [
+                { name: 'walletAddress', type: 'address' },
                 { name: 'id', type: 'string' },
                 { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
@@ -394,6 +454,7 @@ describe('Game', async () => {
         };
 
         const voucher3 = {
+            walletAddress: user.address,
             id: '123',
             itemAddress: NFTContractV2.address,
             tokenId: 1,
@@ -426,6 +487,7 @@ describe('Game', async () => {
         };
         const types1 = {
             WithdrawItemStruct: [
+                { name: 'walletAddress', type: 'address' },
                 { name: 'id', type: 'string' },
                 { name: 'itemAddress', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
@@ -435,6 +497,7 @@ describe('Game', async () => {
             ],
         };
         const voucher1 = {
+            walletAddress: user.address,
             id: '123',
             itemAddress: NFTContractV2.address,
             tokenId: 0,

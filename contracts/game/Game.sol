@@ -7,12 +7,19 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "../interfaces/INFT.sol";
 
-contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
+contract GameUpgradeable is
+    OwnableUpgradeable,
+    EIP712Upgradeable,
+    ReentrancyGuardUpgradeable
+{
     using StringsUpgradeable for uint256;
 
     struct WithdrawTokenStruct {
+        address walletAddress;
+        bool isNativeToken;
         address tokenAddress;
         uint256 amount;
         string nonce;
@@ -27,6 +34,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
 
     event DepositTokenEvent(
         address indexed user,
+        bool isNativeToken,
         address tokenAddress,
         uint256 amount,
         uint64 timestamp
@@ -53,6 +61,7 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
     );
 
     struct WithdrawItemStruct {
+        address walletAddress;
         string id;
         address itemAddress;
         uint256 tokenId;
@@ -82,14 +91,15 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
 
     function __Game_init() internal initializer {
         __EIP712_init(_SIGNING_DOMAIN, _SIGNATURE_VERSION);
+        __ReentrancyGuard_init();
         __Ownable_init();
         __Game_init_unchained();
     }
 
     function __Game_init_unchained() internal initializer {}
 
-    function depositToken(address tokenAddress, uint256 amount) public {
-        require(amount > 0, "Amount must greater than zero");
+    function depositToken(uint256 amount, address tokenAddress) public {
+        require(amount > 0, "Amount must be greater than zero");
 
         IERC20Upgradeable(tokenAddress).transferFrom(
             _msgSender(),
@@ -99,13 +109,34 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
 
         emit DepositTokenEvent(
             _msgSender(),
+            false,
             tokenAddress,
             amount,
             uint64(block.timestamp)
         );
     }
 
-    function withdrawToken(WithdrawTokenStruct calldata data) public {
+    function depositNativeToken(uint256 amount) public payable {
+        require(amount > 0, "Amount must be greater than zero");
+        require(
+            msg.value >= amount,
+            "Value must be equal or greater than amount"
+        );
+
+        emit DepositTokenEvent(
+            _msgSender(),
+            true,
+            address(0),
+            amount,
+            uint64(block.timestamp)
+        );
+    }
+
+    function withdrawToken(WithdrawTokenStruct calldata data)
+        public
+        payable
+        nonReentrant
+    {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyWithdrawToken(data);
         // Make sure that the signer is authorized to withdraw tokens
@@ -115,10 +146,14 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
         require(!_noncesMap[data.nonce], "The nonce has been used");
         _noncesMap[data.nonce] = true;
 
-        IERC20Upgradeable(data.tokenAddress).transfer(
-            _msgSender(),
-            data.amount
-        );
+        if (data.isNativeToken) {
+            payable(_msgSender()).transfer(data.amount);
+        } else {
+            IERC20Upgradeable(data.tokenAddress).transfer(
+                _msgSender(),
+                data.amount
+            );
+        }
 
         emit WithdrawTokenEvent(
             _msgSender(),
@@ -146,8 +181,10 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawTokenStruct(address tokenAddress,uint256 amount,string nonce)"
+                            "WithdrawTokenStruct(address walletAddress,bool isNativeToken,address tokenAddress,uint256 amount,string nonce)"
                         ),
+                        _msgSender(),
+                        data.isNativeToken,
                         data.tokenAddress,
                         data.amount,
                         keccak256(bytes(data.nonce))
@@ -269,8 +306,9 @@ contract GameUpgradeable is OwnableUpgradeable, EIP712Upgradeable {
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "WithdrawItemStruct(string id,address itemAddress,uint256 tokenId,string itemType,string extraType,string nonce)"
+                            "WithdrawItemStruct(address walletAddress,string id,address itemAddress,uint256 tokenId,string itemType,string extraType,string nonce)"
                         ),
+                        _msgSender(),
                         keccak256(bytes(data.id)),
                         data.itemAddress,
                         data.tokenId,

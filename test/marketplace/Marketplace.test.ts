@@ -70,6 +70,7 @@ describe('Marketplace', async () => {
             };
             const types2 = {
                 OrderItemStruct: [
+                    { name: 'walletAddress', type: 'address' },
                     { name: 'id', type: 'string' },
                     { name: 'itemType', type: 'string' },
                     { name: 'extraType', type: 'string' },
@@ -80,6 +81,7 @@ describe('Marketplace', async () => {
                 ],
             };
             const orderItem2 = {
+                walletAddress: user.address,
                 id: '123',
                 itemType: 'box',
                 extraType: '',
@@ -147,6 +149,7 @@ describe('Marketplace', async () => {
             };
             const types2 = {
                 OrderItemStruct: [
+                    { name: 'walletAddress', type: 'address' },
                     { name: 'id', type: 'string' },
                     { name: 'itemType', type: 'string' },
                     { name: 'extraType', type: 'string' },
@@ -157,6 +160,7 @@ describe('Marketplace', async () => {
                 ],
             };
             const orderItem2 = {
+                walletAddress: user.address,
                 id: '123',
                 itemType: 'box',
                 extraType: '',
@@ -244,6 +248,7 @@ describe('Marketplace', async () => {
                 };
                 const types2 = {
                     OrderItemStruct: [
+                        { name: 'walletAddress', type: 'address' },
                         { name: 'id', type: 'string' },
                         { name: 'itemType', type: 'string' },
                         { name: 'extraType', type: 'string' },
@@ -254,6 +259,7 @@ describe('Marketplace', async () => {
                     ],
                 };
                 const orderItem2 = {
+                    walletAddress: user.address,
                     id: '123',
                     itemType: 'box',
                     extraType: '',

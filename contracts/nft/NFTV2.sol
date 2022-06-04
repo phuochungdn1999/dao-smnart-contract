@@ -38,6 +38,7 @@ contract NFTUpgradeableV2 is
     );
 
     struct StarterBoxStruct {
+        address walletAddress;
         string id;
         uint256 tokenId;
         uint256 numberTokens;
@@ -207,8 +208,9 @@ contract NFTUpgradeableV2 is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "StarterBoxStruct(string id,uint256 tokenId,uint256 numberTokens,string nonce)"
+                            "StarterBoxStruct(address walletAddress,string id,uint256 tokenId,uint256 numberTokens,string nonce)"
                         ),
+                        _msgSender(),
                         keccak256(bytes(data.id)),
                         data.tokenId,
                         data.numberTokens,
