@@ -111,6 +111,7 @@ describe('NFT', () => {
             };
             const types2 = {
                 StarterBoxStruct: [
+                    { name: 'walletAddress', type: 'address' },
                     { name: 'id', type: 'string' },
                     { name: 'tokenId', type: 'uint256' },
                     { name: 'numberTokens', type: 'uint256' },
@@ -118,6 +119,7 @@ describe('NFT', () => {
                 ],
             };
             const voucher2 = {
+                walletAddress: user.address,
                 id: '123',
                 tokenId: BigNumber.from(1),
                 numberTokens: BigNumber.from(2),

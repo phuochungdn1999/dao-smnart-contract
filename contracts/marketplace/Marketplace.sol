@@ -30,6 +30,7 @@ contract MarketplaceUpgradeable is
     }
 
     struct OrderItemStruct {
+        address walletAddress;
         string id;
         string itemType;
         string extraType;
@@ -161,8 +162,9 @@ contract MarketplaceUpgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "OrderItemStruct(string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256 price,string nonce)"
+                            "OrderItemStruct(address walletAddress,string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256 price,string nonce)"
                         ),
+                        _msgSender(),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
                         keccak256(bytes(data.extraType)),

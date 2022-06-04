@@ -5,4 +5,4 @@ const upgradeNFTUpgradeableMain = async (baseAddress: string, version: string = 
     await upgradeNFTUpgradeable(baseAddress, (await ethers.getSigners())[0], version);
 };
 
-// upgradeNFTUpgradeableMain('0x05730a34aDE0b9d3F71bE29195bEd21c05Dceb9B');
+upgradeNFTUpgradeableMain('0x8146a2Acd690961f5862a997DeeeCa9d0DaffD2c');
