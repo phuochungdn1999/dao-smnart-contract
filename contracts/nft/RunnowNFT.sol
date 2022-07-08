@@ -10,13 +10,15 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract NFTUpgradeableV2 is
+contract RunnowNFTUpgradeableV2 is
     ERC721Upgradeable,
     OwnableUpgradeable,
     EIP712Upgradeable
 {
     using StringsUpgradeable for uint256;
     using CountersUpgradeable for CountersUpgradeable.Counter;
+
+    string private baseURI;
 
     struct ItemVoucherStruct {
         string id;
@@ -96,6 +98,11 @@ contract NFTUpgradeableV2 is
     function getCurrentId() public view returns (uint256) {
         return _tokenIds.current();
     }
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
+    }
+
 
     function redeem(ItemVoucherStruct calldata data) public payable {
         // Make sure signature is valid and get the address of the signer
@@ -261,6 +268,7 @@ contract NFTUpgradeableV2 is
                 nonces.length == extraTypes.length,
             "Array invalid"
         );
+        require(to.length <= 150, "Over 150");
         // for loop Mint
         for (uint256 i = 0; i < to.length; i++) {
             _tokenIds.increment();
@@ -279,4 +287,7 @@ contract NFTUpgradeableV2 is
         }
     }
 
+    function setBaseURI(string memory _baseUri) external{
+        baseURI = _baseUri;
+    }
 }

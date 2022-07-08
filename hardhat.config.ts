@@ -1,14 +1,14 @@
-import '@nomiclabs/hardhat-etherscan';
-import '@nomiclabs/hardhat-truffle5';
-import '@nomiclabs/hardhat-waffle';
-import '@nomiclabs/hardhat-web3';
+import "@nomiclabs/hardhat-etherscan";
+import "@nomiclabs/hardhat-truffle5";
+import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-web3";
 import "@openzeppelin/hardhat-upgrades";
-import '@typechain/hardhat';
-import * as dotenv from 'dotenv';
-import 'hardhat-gas-reporter';
-import { HardhatUserConfig } from 'hardhat/config';
-import 'solidity-coverage';
-import 'tsconfig-paths';
+import "@typechain/hardhat";
+import * as dotenv from "dotenv";
+import "hardhat-gas-reporter";
+import { HardhatUserConfig } from "hardhat/config";
+import "solidity-coverage";
+import "tsconfig-paths";
 
 dotenv.config();
 
@@ -16,7 +16,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.2',
+        version: "0.8.2",
         settings: {
           optimizer: {
             enabled: true,
@@ -28,23 +28,27 @@ const config: HardhatUserConfig = {
   },
   networks: {
     bsc: {
-      url: 'https://bsc-dataseed.binance.org',
+      url: "https://bsc-dataseed.binance.org",
       gas: 5000000,
       chainId: 56,
-      accounts: {
-        mnemonic: process.env.MNEMONIC_BSC_PROD,
-      },
+      // accounts: {
+      //   mnemonic: process.env.MNEMONIC_BSC_PROD,
+      // },
+      accounts:
+        process.env.PRIVATE_KEY_MAINNET !== undefined ? [process.env.PRIVATE_KEY_MAINNET] : [],
     },
     bscTestnet: {
-      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
       gas: 5000000,
       chainId: 97,
-      accounts: {
-        mnemonic: process.env.MNEMONIC_BSC,
-      },
+      // accounts: {
+      //   mnemonic: process.env.MNEMONIC_BSC,
+      // },
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     avalanche: {
-      url: 'https://api.avax.network/ext/bc/C/rpc',
+      url: "https://api.avax.network/ext/bc/C/rpc",
       gas: 5000000,
       chainId: 43114,
       accounts: {
@@ -52,31 +56,37 @@ const config: HardhatUserConfig = {
       },
     },
     avalancheFujiTestnet: {
-      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
       gas: 5000000,
       chainId: 43113,
-      accounts: {
-        mnemonic: process.env.MNEMONIC_AVAX,
-      },
+      // accounts: {
+      //   mnemonic: process.env.MNEMONIC_AVAX,
+      // },
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
   },
   etherscan: {
     apiKey: {
-      bsc: process.env.BSC_API_KEY_PROD,
-      bscTestnet: process.env.BSC_API_KEY,
-      avalanche: process.env.SNOWTRACE_API_KEY_PROD,
+      bsc: process.env.BSC_API_KEY_PROD ? process.env.BSC_API_KEY_PROD : "",
+      bscTestnet: process.env.BSC_API_KEY ? process.env.BSC_API_KEY : "",
+      avalanche: process.env.SNOWTRACE_API_KEY_PROD
+        ? process.env.SNOWTRACE_API_KEY_PROD
+        : "",
       avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY
-    }
+        ? process.env.SNOWTRACE_API_KEY
+        : "",
+    },
   },
   gasReporter: {
     enabled: false,
-    currency: 'USD',
+    currency: "USD",
   },
   paths: {
-    sources: './contracts',
-    tests: './test',
-    cache: './cache',
-    artifacts: './artifacts',
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
   },
   mocha: {
     timeout: 50000,
