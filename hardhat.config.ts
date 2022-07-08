@@ -35,7 +35,9 @@ const config: HardhatUserConfig = {
       //   mnemonic: process.env.MNEMONIC_BSC_PROD,
       // },
       accounts:
-        process.env.PRIVATE_KEY_MAINNET !== undefined ? [process.env.PRIVATE_KEY_MAINNET] : [],
+        process.env.PRIVATE_KEY_MAINNET !== undefined
+          ? [process.env.PRIVATE_KEY_MAINNET]
+          : [],
     },
     bscTestnet: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545",

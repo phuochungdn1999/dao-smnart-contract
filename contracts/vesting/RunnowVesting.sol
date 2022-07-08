@@ -20,17 +20,33 @@ contract VestingUpgradeable is OwnableUpgradeable {
 
     uint256 public lastestDistributeMonth;
 
-    address public immutable seedSales;
-    address public immutable privateSales;
-    address public immutable publicSales;
-    address public immutable advisorsAndPartners;
-    address public immutable teamAndOperations;
-    address public immutable mktAndCommunity;
-    address public immutable gameTreasury;
-    address public immutable farmingAndStaking;
-    address public immutable liquidity;
+    address public  seedSales;
+    address public  privateSales;
+    address public  publicSales;
+    address public  advisorsAndPartners;
+    address public  teamAndOperations;
+    address public  mktAndCommunity;
+    address public  gameTreasury;
+    address public  farmingAndStaking;
+    address public  liquidity;
 
-    constructor(
+    function initialize() public virtual initializer {
+        __vesting_init(
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            1657261608,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8
+        );
+    }
+
+    function __vesting_init(
         address _runnowAddr,
         uint256 _distributeTime,
         address _seedSales,
@@ -42,7 +58,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
         address _gameTreasury,
         address _farmingAndStaking,
         address _liquidity
-    ) {
+    ) internal {
         runnow = _runnowAddr;
         distributeTime = _distributeTime;
         require(
@@ -97,12 +113,12 @@ contract VestingUpgradeable is OwnableUpgradeable {
     function distribute() external {
         require(
             block.timestamp >= distributeTime,
-            "GENIVesting: not claim time"
+            "RUNNOWVesting: not claim time"
         );
         uint256 month = (block.timestamp - distributeTime) / SECONDS_PER_MONTH;
         require(
             lastestDistributeMonth <= month,
-            "GENIVesting: already claimed in this month"
+            "RUNNOWVesting: already claimed in this month"
         );
 
         uint256 amountForSeedSale;
@@ -136,8 +152,8 @@ contract VestingUpgradeable is OwnableUpgradeable {
             amountForFarmingAndStaking == 0 &&
             amountForLiquidity == 0;
         require(
-            month < 36 || (month >= 36 && !remainVesting),
-            "GENIVesting: expiry time"
+            month <= 36 || (month > 36 && !remainVesting),
+            "RUNNOWVesting: expiry time"
         );
         if (amountForSeedSale > 0)
             IRunnow(runnow).mint(seedSales, amountForSeedSale);
