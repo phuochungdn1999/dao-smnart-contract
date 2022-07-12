@@ -18,6 +18,11 @@ contract RUNNOWUpgradeable is
         0x000000000000000000000000000000000000dEaD;
     uint256 public burnAmount;
 
+    modifier amountRunnow() {
+        require(totalSupply() <= CAP, "Exceed total supply");
+        _;
+    }
+
     function initialize() public virtual initializer {
         __RUNNOW_init();
     }
@@ -30,10 +35,10 @@ contract RUNNOWUpgradeable is
     }
 
     function __RUNNOW_init_unchained() internal initializer {
-        _mint(_msgSender(), 1_000_000 * 10**18);
+        // _mint(_msgSender(), 1_000_000 * 10**18);
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
+    function mint(address to, uint256 amount) external onlyOwner amountRunnow{
         _mint(to, amount);
     }
 

@@ -5,4 +5,4 @@ const upgradeGameUpgradeableMain = async (baseAddress: string, version: string =
     await upgradeGameUpgradeable(baseAddress, (await ethers.getSigners())[0], version);
 };
 
-upgradeGameUpgradeableMain('0xcfB1BE6e38daD77a3dCd682CD6E277b407Fc29ce');
+upgradeGameUpgradeableMain('0x808071Ec94993fa1222aCe2AcCB95948C072F07F');
