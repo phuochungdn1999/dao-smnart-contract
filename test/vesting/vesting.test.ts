@@ -12,13 +12,13 @@ let VestingContract: Contract;
 let RUNNOWContract: Contract;
 const seed = "30000000";
 const privateRound = "40000000";
-const publicRound = "30000000";
+const publicRound = "60000000";
 const advisor = "50000000";
 const team = "200000000";
-const marketing = "150000000";
-const reward = "400000000";
-const farm = "50000000";
-const liquidity = "50000000";
+const marketing = "100000000";
+const reward = "350000000";
+const farm = "150000000";
+const liquidity = "20000000";
 
 describe("Vesting;", () => {
   beforeEach(async () => {
