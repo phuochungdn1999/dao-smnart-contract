@@ -14,8 +14,8 @@ contract VestingUpgradeable is OwnableUpgradeable {
 
     uint256 public distributeTime;
 
-    uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
-    // uint256 private constant SECONDS_PER_MONTH = 5 minutes; //testnet
+    // uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
+    uint256 private constant SECONDS_PER_MONTH = 5 minutes; //testnet
 
     uint256 private constant decimals = 18;
 
@@ -33,8 +33,8 @@ contract VestingUpgradeable is OwnableUpgradeable {
 
     function initialize() public virtual initializer {
         __vesting_init(
-            0xba7c3c9D44F7A124601aEF7c550e2f6DE9bE4811,
-            1657261608,
+            0xb7b1db1ED12A8DE0fDB16B69844d6b0a3Be47536,
+            1657681200,
             0x1357ea29093b7bd4e557D0638F7f3113Dd4D504e,
             0xabD002429daf2A4c383C4491ab968d8Eaeb9AB83,
             0x924db5A9C038A70bD812E403ebc96DF6271e26ba,
