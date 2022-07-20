@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 contract MarketplaceV2Upgradeable is
     OwnableUpgradeable,
@@ -61,6 +62,7 @@ contract MarketplaceV2Upgradeable is
         uint256 tokenId,
         address owner,
         uint256 price,
+        address tokenAddress,
         address buyer,
         uint64 timestamp
     );
@@ -74,6 +76,11 @@ contract MarketplaceV2Upgradeable is
         uint64 timestamp
     );
 
+    event AllowNewToken(
+        address token,
+        bool isAllowed
+    );
+
     string public constant _SIGNING_DOMAIN = "Marketplace-Item";
     string private constant _SIGNATURE_VERSION = "1";
 
@@ -82,6 +89,7 @@ contract MarketplaceV2Upgradeable is
     mapping(string => ItemStruct) public itemsMap;
     mapping(string => bool) private _noncesMap;
     mapping(string => mapping(address => uint256)) private tokenPrice;
+    mapping(address => bool) private allowedToken;
 
     function initialize() public virtual initializer {
         __Marketplace_init();
@@ -113,15 +121,12 @@ contract MarketplaceV2Upgradeable is
         // Make sure that the signer is authorized to offer item
         require(signer == owner(), "Signature invalid or unauthorized");
 
-        // Check price and token address same length
-        require(
-            data.price.length == data.tokenAddress.length,
-            "Invalid price length"
-        );
-
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
         _noncesMap[data.nonce] = true;
+
+        // Check price
+        require(data.tokenAddress.length == data.price.length && data.tokenAddress.length > 0, "Length price and token invalid");
 
         if (!itemsMap[data.id].isExist) {
             IERC721Upgradeable(data.itemAddress).transferFrom(
@@ -129,7 +134,13 @@ contract MarketplaceV2Upgradeable is
                 address(this),
                 data.tokenId
             );
+        } else {
+            require(
+                _msgSender() == itemsMap[data.id].owner,
+                "Not owner of NFT"
+            );
         }
+        updatePrice(data.id);
 
         itemsMap[data.id] = ItemStruct({
             id: data.id,
@@ -144,6 +155,8 @@ contract MarketplaceV2Upgradeable is
         });
 
         for (uint256 i = 0; i < data.tokenAddress.length; i++) {
+            require(allowedToken[data.tokenAddress[i]],"Not allowed token to sell");
+            require(data.price[i] > 0,"Price > 0");
             tokenPrice[data.id][data.tokenAddress[i]] = data.price[i];
         }
 
@@ -160,7 +173,7 @@ contract MarketplaceV2Upgradeable is
     }
 
     function _verifyOrderItem(OrderItemStruct calldata data)
-        internal
+        public
         view
         returns (address)
     {
@@ -169,7 +182,7 @@ contract MarketplaceV2Upgradeable is
     }
 
     function _hashOrderItem(OrderItemStruct calldata data)
-        internal
+        public
         view
         returns (bytes32)
     {
@@ -186,48 +199,68 @@ contract MarketplaceV2Upgradeable is
                         keccak256(bytes(data.extraType)),
                         data.tokenId,
                         data.itemAddress,
-                        data.price,
-                        data.tokenAddress,
+                        keccak256(abi.encodePacked(data.price)),
+                        keccak256(abi.encodePacked(data.tokenAddress)),
                         keccak256(bytes(data.nonce))
                     )
                 )
             );
     }
 
-    function buy(string memory id,address tokenAddress) public payable nonReentrant {
+    function buy(string memory id, address tokenAddress)
+        public
+        payable
+        nonReentrant
+    {
         // Check exists & don't buy own
         require(itemsMap[id].isExist, "Item is not in marketplace");
         require(
             itemsMap[id].owner != _msgSender(),
             "You cannot buy your own item"
         );
-        require(tok);
+        require(allowedToken[tokenAddress],"Token not for sale");
+        require(tokenPrice[id][tokenAddress] > 0,"Not listed with token address");
 
         ItemStruct memory item = itemsMap[id];
 
-        // Transfer payment
-        if(tokenAddress == ad)
-        require(msg.value >= item.price, "Not enough money");
-
-        uint256 totalFeesShareAmount = (item.price *
+        uint256 totalFeesShareAmount = (tokenPrice[id][tokenAddress] *
             feesCollectorCutPerMillion) / 1_000_000;
+        uint256 ownerShareAmount = tokenPrice[id][tokenAddress] - totalFeesShareAmount;
 
-        if (totalFeesShareAmount > 0) {
-            (bool success, ) = feesCollectorAddress.call{
-                value: totalFeesShareAmount
-            }("");
-            require(success, "Transfer fee failed");
+        // Transfer payment
+        if (tokenAddress == address(0)) {
+            //transfer with BNB
+            require(msg.value == tokenPrice[id][tokenAddress], "Not enough money");
+            if (totalFeesShareAmount > 0) {
+                (bool success, ) = feesCollectorAddress.call{
+                    value: totalFeesShareAmount
+                }("");
+                require(success, "Transfer fee failed");
+            }
+
+            (bool success, ) = item.owner.call{value: ownerShareAmount}("");
+            require(success, "Transfer money failed");
+        } else {
+            // transfer with token
+            IERC20Upgradeable(tokenAddress).transferFrom(
+                _msgSender(),
+                feesCollectorAddress,
+                totalFeesShareAmount
+            );
+            IERC20Upgradeable(tokenAddress).transferFrom(
+                _msgSender(),
+                item.owner,
+                ownerShareAmount
+            );
+
         }
-
-        uint256 ownerShareAmount = item.price - totalFeesShareAmount;
-        (bool success, ) = item.owner.call{value: ownerShareAmount}("");
-        require(success, "Transfer money failed");
 
         IERC721Upgradeable(item.itemAddress).transferFrom(
             address(this),
             _msgSender(),
             item.tokenId
         );
+        updatePrice(id);
 
         emit BuyEvent(
             item.id,
@@ -235,7 +268,8 @@ contract MarketplaceV2Upgradeable is
             item.extraType,
             item.tokenId,
             item.owner,
-            item.price,
+            tokenPrice[id][tokenAddress],
+            tokenAddress,
             _msgSender(),
             uint64(block.timestamp)
         );
@@ -253,6 +287,7 @@ contract MarketplaceV2Upgradeable is
             _msgSender(),
             item.tokenId
         );
+        updatePrice(id);
 
         emit WithdrawEvent(
             item.id,
@@ -264,5 +299,26 @@ contract MarketplaceV2Upgradeable is
         );
 
         delete itemsMap[id];
+    }
+
+    function updatePrice(string memory id) internal {
+        if (itemsMap[id].tokenAddress.length > 0) {
+            uint256 length = itemsMap[id].tokenAddress.length;
+            for (uint256 i = 0; i < length; i++) {
+                tokenPrice[id][itemsMap[id].tokenAddress[i]] = 0;
+            }
+        }
+    }
+
+    function setAllowedToken(address token,bool isAllowed) external onlyOwner{
+        allowedToken[token] = isAllowed;
+        emit AllowNewToken(
+            token,
+            isAllowed
+        );
+    }
+
+    function getAllowedToken(address token) view public returns(bool){
+        return allowedToken[token];
     }
 }

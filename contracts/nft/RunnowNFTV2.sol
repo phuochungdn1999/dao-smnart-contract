@@ -26,8 +26,8 @@ contract RunnowNFTUpgradeableV2 is
         string itemType;
         string extraType;
         uint256 price;
-        string nonce;
         address tokenAddress;
+        string nonce;
         bytes signature;
     }
 
@@ -163,14 +163,14 @@ contract RunnowNFTUpgradeableV2 is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,string nonce,address tokenAddress)"
+                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,address tokenAddress,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
                         keccak256(bytes(data.extraType)),
                         data.price,
-                        keccak256(bytes(data.nonce)),
                         data.tokenAddress
+                        keccak256(bytes(data.nonce)),
                     )
                 )
             );
