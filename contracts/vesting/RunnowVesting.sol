@@ -14,7 +14,8 @@ contract VestingUpgradeable is OwnableUpgradeable {
 
     uint256 public distributeTime;
 
-    uint256 private constant SECONDS_PER_MONTH = 30 days;
+    uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
+    // uint256 private constant SECONDS_PER_MONTH = 5 minutes; //testnet
 
     uint256 private constant decimals = 18;
 
@@ -32,18 +33,19 @@ contract VestingUpgradeable is OwnableUpgradeable {
 
     function initialize() public virtual initializer {
         __vesting_init(
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
+            0xba7c3c9D44F7A124601aEF7c550e2f6DE9bE4811,
             1657261608,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8,
-            0x8b170E0fD494fD789232597B6C0C2Dcc26C3AEa8
+            0x1357ea29093b7bd4e557D0638F7f3113Dd4D504e,
+            0xabD002429daf2A4c383C4491ab968d8Eaeb9AB83,
+            0x924db5A9C038A70bD812E403ebc96DF6271e26ba,
+            0x2A7A70bDADc13eD9c31069B47d3df46058bDC4f5,
+            0xab985ef330f7560B4045D4A1E19A206A36c7479b,
+            0xC08c4Fc41F6F63A47E63505f8492fFfD753A2304,
+            0x6456be06d125C0B7F661E6E09E695AF4d59D58D1,
+            0xeFfe75B1574Bdd2FE0Bc955b57e4f82A2BAD6bF9,
+            0x5bc128b3711d741A0DdedD519d55AA60E60f442c
         );
+        __Ownable_init();
     }
 
     function __vesting_init(
@@ -282,8 +284,8 @@ contract VestingUpgradeable is OwnableUpgradeable {
         uint256 maxAmount = 50_000_000 * 10**decimals;
         uint256 linearAmount = maxAmount / 36;
         if (month > 36 || month == 0) amount = 0;
-        else if (month >= 0 && month < 35) amount = linearAmount;
-        else if (month == 35) amount = maxAmount - linearAmount * 35;
+        else if (month >= 0 && month <= 35) amount = linearAmount;
+        else if (month == 36) amount = maxAmount - linearAmount * 35;
     }
 
     function getAmountForLiquidity(uint256 month)

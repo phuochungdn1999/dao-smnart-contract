@@ -259,7 +259,7 @@ contract RunnowNFTUpgradeableV2 is
         string[] calldata itemTypes,
         string[] calldata extraTypes,
         string[] calldata nonces
-    ) external returns (uint256) {
+    ) external {
         require(_msgSender() == owner(), "Unauthorized");
         require(
             to.length == ids.length &&
@@ -269,6 +269,7 @@ contract RunnowNFTUpgradeableV2 is
             "Array invalid"
         );
         require(to.length <= 150, "Over 150");
+        
         // for loop Mint
         for (uint256 i = 0; i < to.length; i++) {
             _tokenIds.increment();
