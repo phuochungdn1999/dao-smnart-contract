@@ -230,9 +230,10 @@ contract VestingUpgradeable is OwnableUpgradeable {
     {
         uint256 maxAmount = 50_000_000 * 10**decimals;
         uint256 linearAmount = maxAmount / 24;
-        if (month >= 0 && month <= 12) amount = 0;
-        else if (month >= 13 && month <= 35) amount = linearAmount;
-        else if (month == 36) amount = maxAmount - linearAmount * 23;
+        if (month >= 0 && month < 12) amount = 0;
+        else if (month >= 12 && month <= 34) amount = linearAmount;
+        else if (month == 35) amount = maxAmount - linearAmount * 23
+        else if (month == 36) amount = 0;
     }
 
     function getAmountForTeamAndOperations(uint256 month)
@@ -242,7 +243,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
     {
         uint256 maxAmount = 200_000_000 * 10**decimals;
         uint256 linearAmount = maxAmount / 24;
-        if (month >= 0 && month < 12 || month == 36) amount = 0;
+        if (month >= 0 && month < 12 || month >= 36) amount = 0;
         else if (month >= 12 && month <= 34) amount = linearAmount;
         else if (month == 35) amount = maxAmount - linearAmount * 23;
     }
@@ -281,7 +282,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
         uint256 maxAmount = 150_000_000 * 10**decimals;
         uint256 linearAmount = maxAmount / 36;
         if (month > 36 || month == 0) amount = 0;
-        else if (month >= 0 && month <= 35) amount = linearAmount;
+        else if (month > 0 && month <= 35) amount = linearAmount;
         else if (month == 36) amount = maxAmount - linearAmount * 35;
     }
 
@@ -294,7 +295,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
         uint256 publicSaleAmount = 1_000_000 * 10**decimals;
         uint256 linearAmount = (maxAmount - publicSaleAmount) / 12;
         if (month == 0) amount = publicSaleAmount;
-        else if ((month >= 13) || month > 15) amount = 0;
+        else if (month >= 13) amount = 0;
         else if (month >= 1 && month <= 11) amount = linearAmount;
         else if (month == 12)
             amount = maxAmount - publicSaleAmount - linearAmount * 11;
