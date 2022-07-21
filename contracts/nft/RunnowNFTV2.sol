@@ -169,8 +169,8 @@ contract RunnowNFTUpgradeableV2 is
                         keccak256(bytes(data.itemType)),
                         keccak256(bytes(data.extraType)),
                         data.price,
-                        data.tokenAddress
-                        keccak256(bytes(data.nonce)),
+                        data.tokenAddress,
+                        keccak256(bytes(data.nonce))
                     )
                 )
             );

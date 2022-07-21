@@ -26,9 +26,10 @@ contract MarketplaceV2Upgradeable is
         uint256 tokenId;
         address itemAddress;
         address owner;
-        uint256[] price;
-        address[] tokenAddress;
+        uint256 price;
         bool isExist;
+        uint256[] priceList;
+        address[] tokenAddress;
     }
 
     struct OrderItemStruct {
@@ -150,7 +151,8 @@ contract MarketplaceV2Upgradeable is
             itemAddress: data.itemAddress,
             tokenId: data.tokenId,
             owner: _msgSender(),
-            price: data.price,
+            price:0,
+            priceList: data.price,
             tokenAddress: data.tokenAddress,
             isExist: true
         });
@@ -211,7 +213,7 @@ contract MarketplaceV2Upgradeable is
             );
     }
 
-    function buy(string memory id, address tokenAddress)
+    function buy(string memory id, address tokenAddress,uint256 amount)
         public
         payable
         nonReentrant
@@ -224,8 +226,8 @@ contract MarketplaceV2Upgradeable is
         );
         require(allowedToken[tokenAddress], "Token not for sale");
         require(
-            tokenPrice[id][tokenAddress] > 0,
-            "Not listed with token address"
+            msg.value == tokenPrice[id][tokenAddress] || tokenPrice[id][tokenAddress] == amount,
+            "Not enough money"
         );
 
         ItemStruct memory item = itemsMap[id];
@@ -238,10 +240,6 @@ contract MarketplaceV2Upgradeable is
         // Transfer payment
         if (tokenAddress == address(0)) {
             //transfer with BNB
-            require(
-                msg.value == tokenPrice[id][tokenAddress],
-                "Not enough money"
-            );
             if (totalFeesShareAmount > 0) {
                 (bool success, ) = feesCollectorAddress.call{
                     value: totalFeesShareAmount
