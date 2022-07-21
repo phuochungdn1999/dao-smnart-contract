@@ -76,10 +76,7 @@ contract MarketplaceV2Upgradeable is
         uint64 timestamp
     );
 
-    event AllowNewToken(
-        address token,
-        bool isAllowed
-    );
+    event AllowNewToken(address token, bool isAllowed);
 
     string public constant _SIGNING_DOMAIN = "Marketplace-Item";
     string private constant _SIGNATURE_VERSION = "1";
@@ -115,7 +112,7 @@ contract MarketplaceV2Upgradeable is
         feesCollectorCutPerMillion = data;
     }
 
-    function offer(OrderItemStruct calldata data) public {
+    function offer(OrderItemStruct calldata data) public nonReentrant {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyOrderItem(data);
         // Make sure that the signer is authorized to offer item
@@ -126,7 +123,11 @@ contract MarketplaceV2Upgradeable is
         _noncesMap[data.nonce] = true;
 
         // Check price
-        require(data.tokenAddress.length == data.price.length && data.tokenAddress.length > 0, "Length price and token invalid");
+        require(
+            data.tokenAddress.length == data.price.length &&
+                data.tokenAddress.length > 0,
+            "Length price and token invalid"
+        );
 
         if (!itemsMap[data.id].isExist) {
             IERC721Upgradeable(data.itemAddress).transferFrom(
@@ -155,8 +156,11 @@ contract MarketplaceV2Upgradeable is
         });
 
         for (uint256 i = 0; i < data.tokenAddress.length; i++) {
-            require(allowedToken[data.tokenAddress[i]],"Not allowed token to sell");
-            require(data.price[i] > 0,"Price > 0");
+            require(
+                allowedToken[data.tokenAddress[i]],
+                "Not allowed token to sell"
+            );
+            require(data.price[i] > 0, "Price > 0");
             tokenPrice[data.id][data.tokenAddress[i]] = data.price[i];
         }
 
@@ -173,7 +177,7 @@ contract MarketplaceV2Upgradeable is
     }
 
     function _verifyOrderItem(OrderItemStruct calldata data)
-        public
+        internal
         view
         returns (address)
     {
@@ -182,7 +186,7 @@ contract MarketplaceV2Upgradeable is
     }
 
     function _hashOrderItem(OrderItemStruct calldata data)
-        public
+        internal
         view
         returns (bytes32)
     {
@@ -218,19 +222,26 @@ contract MarketplaceV2Upgradeable is
             itemsMap[id].owner != _msgSender(),
             "You cannot buy your own item"
         );
-        require(allowedToken[tokenAddress],"Token not for sale");
-        require(tokenPrice[id][tokenAddress] > 0,"Not listed with token address");
+        require(allowedToken[tokenAddress], "Token not for sale");
+        require(
+            tokenPrice[id][tokenAddress] > 0,
+            "Not listed with token address"
+        );
 
         ItemStruct memory item = itemsMap[id];
 
         uint256 totalFeesShareAmount = (tokenPrice[id][tokenAddress] *
             feesCollectorCutPerMillion) / 1_000_000;
-        uint256 ownerShareAmount = tokenPrice[id][tokenAddress] - totalFeesShareAmount;
+        uint256 ownerShareAmount = tokenPrice[id][tokenAddress] -
+            totalFeesShareAmount;
 
         // Transfer payment
         if (tokenAddress == address(0)) {
             //transfer with BNB
-            require(msg.value == tokenPrice[id][tokenAddress], "Not enough money");
+            require(
+                msg.value == tokenPrice[id][tokenAddress],
+                "Not enough money"
+            );
             if (totalFeesShareAmount > 0) {
                 (bool success, ) = feesCollectorAddress.call{
                     value: totalFeesShareAmount
@@ -252,7 +263,6 @@ contract MarketplaceV2Upgradeable is
                 item.owner,
                 ownerShareAmount
             );
-
         }
 
         IERC721Upgradeable(item.itemAddress).transferFrom(
@@ -277,7 +287,7 @@ contract MarketplaceV2Upgradeable is
         delete itemsMap[id];
     }
 
-    function withdraw(string memory id) public {
+    function withdraw(string memory id) public nonReentrant {
         require(itemsMap[id].owner == _msgSender(), "You don't own this item");
 
         ItemStruct memory item = itemsMap[id];
@@ -310,15 +320,12 @@ contract MarketplaceV2Upgradeable is
         }
     }
 
-    function setAllowedToken(address token,bool isAllowed) external onlyOwner{
+    function setAllowedToken(address token, bool isAllowed) external onlyOwner {
         allowedToken[token] = isAllowed;
-        emit AllowNewToken(
-            token,
-            isAllowed
-        );
+        emit AllowNewToken(token, isAllowed);
     }
 
-    function getAllowedToken(address token) view public returns(bool){
+    function getAllowedToken(address token) public view returns (bool) {
         return allowedToken[token];
     }
 }

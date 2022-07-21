@@ -119,15 +119,15 @@ contract GameUpgradeable is
     function depositNativeToken(uint256 amount) public payable {
         require(amount > 0, "Amount must be greater than zero");
         require(
-            msg.value >= amount,
-            "Value must be equal or greater than amount"
+            msg.value == amount,
+            "Value must be equal amount"
         );
 
         emit DepositTokenEvent(
             _msgSender(),
             true,
             address(0),
-            amount,
+            msg.value,
             uint64(block.timestamp)
         );
     }
