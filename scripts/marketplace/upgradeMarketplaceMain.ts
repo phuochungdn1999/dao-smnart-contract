@@ -5,4 +5,4 @@ const upgradeMarketplaceUpgradeableMain = async (baseAddress: string, version: s
     await upgradeMarketplaceUpgradeable(baseAddress, (await ethers.getSigners())[0], version);
 };
 
-upgradeMarketplaceUpgradeableMain('0xAE80ef793FcAC3abF9348145221bcce56cA4E287');
+upgradeMarketplaceUpgradeableMain('0x0D51b031cc4CD92560d1F4a94435CF64F7e1d57b');
