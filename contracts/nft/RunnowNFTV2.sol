@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-contract RunnowNFTUpgradeableV2 is
+contract RunnowNFTUpgradeableV3 is
     ERC721Upgradeable,
     OwnableUpgradeable,
     EIP712Upgradeable

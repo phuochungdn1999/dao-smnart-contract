@@ -15,7 +15,7 @@
     "deployVesting:bscTestnet": "npx hardhat run ./scripts/vesting/deployVestingMain.ts --network bscTestnet",
     "updateNFT:bscTestnet": "npx hardhat run ./scripts/nft/upgradeNFTMain.ts --network bscTestnet",
     "updateMarketplace:bscTestnet": "npx hardhat run ./scripts/marketplace/upgradeMarketplaceMain.ts --network bscTestnet",
-    "verify:bscTestnet":" npx hardhat verify 0xaB4C0d32D6cc96FE4528bA061A2ed75F23B3ad23 --network bscTestnet",
+    "verify:bscTestnet":" npx hardhat verify 0xf8876dBac378b3FB5305CbE78C5Ce954E57CE7f3 --network bscTestnet",
     "deployRunGem:bsc": "npx hardhat run ./scripts/coin/deployRUNGEMMain.ts --network bsc",
     "deployRunNow:bsc": "npx hardhat run ./scripts/coin/deployRUNNOWMain.ts --network bsc",
     "deployGame:bsc": "npx hardhat run ./scripts/game/deployGameMain.ts --network bsc",
