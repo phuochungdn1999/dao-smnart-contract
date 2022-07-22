@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract RunnowNFTUpgradeableV2 is
+contract RunnowNFTUpgradeable is
     ERC721Upgradeable,
     OwnableUpgradeable,
     EIP712Upgradeable
@@ -269,7 +269,7 @@ contract RunnowNFTUpgradeableV2 is
             "Array invalid"
         );
         require(to.length <= 150, "Over 150");
-        
+
         // for loop Mint
         for (uint256 i = 0; i < to.length; i++) {
             _tokenIds.increment();
