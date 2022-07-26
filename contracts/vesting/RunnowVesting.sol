@@ -258,7 +258,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
         uint256 linearAmount = (maxAmount - publicSaleAmount) / 36;
         if (month > 36) amount = 0;
         else if (month == 0 ) amount = publicSaleAmount;
-        else if (month >= 1 && month < 35) amount = linearAmount;
+        else if (month >= 1 && month <= 35) amount = linearAmount;
         else if (month == 36) amount = maxAmount - linearAmount * 35;
     }
 

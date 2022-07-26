@@ -225,10 +225,7 @@ contract MarketplaceV2Upgradeable is
             "You cannot buy your own item"
         );
         require(allowedToken[tokenAddress], "Token not for sale");
-        require(
-            msg.value == tokenPrice[id][tokenAddress] || tokenPrice[id][tokenAddress] == amount,
-            "Not enough money"
-        );
+        require(tokenPrice[id][tokenAddress] > 0, "Token not listed");
 
         ItemStruct memory item = itemsMap[id];
 
@@ -239,6 +236,7 @@ contract MarketplaceV2Upgradeable is
 
         // Transfer payment
         if (tokenAddress == address(0)) {
+            require(msg.value == amount && msg.value == tokenPrice[id][tokenAddress],"Not same price");
             //transfer with BNB
             if (totalFeesShareAmount > 0) {
                 (bool success, ) = feesCollectorAddress.call{
@@ -250,6 +248,7 @@ contract MarketplaceV2Upgradeable is
             (bool success, ) = item.owner.call{value: ownerShareAmount}("");
             require(success, "Transfer money failed");
         } else {
+            require(amount == tokenPrice[id][tokenAddress],"Not same price");
             // transfer with token
             IERC20Upgradeable(tokenAddress).transferFrom(
                 _msgSender(),

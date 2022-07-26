@@ -24,7 +24,7 @@
     "updateNFT:bsc": "npx hardhat run ./scripts/nft/upgradeNFTMain.ts --network bsc",
     "updateMarketplace:bsc": "npx hardhat run ./scripts/marketplace/upgradeMarketplaceMain.ts --network bsc",
     "updateGame:bsc": "npx hardhat run ./scripts/game/upgradeGameMain.ts --network bsc",
-    "verify:bsc":" npx hardhat verify 0x22561b85b07146945766f42e28eef3a9f0a17365 --network bsc"
+    "verify:bsc":" npx hardhat verify  0xc43c3982683342cd8774870716b393a9c5fce6a9 --network bsc"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
