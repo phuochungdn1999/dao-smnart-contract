@@ -317,17 +317,6 @@ contract MarketplaceV3Upgradeable is
         }
     }
 
-    function newDatasetAllowedToken(string memory id, address token, bool isAllowed) external {
-        if (itemsMap[id].tokenAddress.length > 0) {
-            uint256 length = itemsMap[id].tokenAddress.length;
-            for (uint256 i = 0; i < length; i++) {
-                tokenPrice[id][itemsMap[id].tokenAddress[i]] = 0;
-            }
-        }
-        allowedToken[token] = isAllowed;
-        emit AllowNewToken(token, isAllowed);
-    }
-
     function setAllowedToken(address token, bool isAllowed) external onlyOwner {
         allowedToken[token] = isAllowed;
         emit AllowNewToken(token, isAllowed);
