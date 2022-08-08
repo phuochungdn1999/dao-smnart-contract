@@ -1,12 +1,22 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ethers, upgrades } from 'hardhat';
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { ethers, upgrades } from "hardhat";
 
-const upgradeMarketplaceUpgradeable = async (baseAddress: string, deployer: SignerWithAddress, version: string = 'MarketplaceV2Upgradeable') => {
-    const MarketplaceUpgradeableFactory = await ethers.getContractFactory(version, deployer);
-    const MarketplaceUpgradeableInstance = await upgrades.upgradeProxy(baseAddress, MarketplaceUpgradeableFactory);
-    console.log('MarketplaceUpgradeable upgraded');
+const upgradeMarketplaceUpgradeable = async (
+  baseAddress: string,
+  deployer: SignerWithAddress,
+  version: string = "MarketplaceV3Upgradeable"
+) => {
+  const MarketplaceUpgradeableFactory = await ethers.getContractFactory(
+    version,
+    deployer
+  );
+  const MarketplaceUpgradeableInstance = await upgrades.upgradeProxy(
+    baseAddress,
+    MarketplaceUpgradeableFactory
+  );
+  console.log("MarketplaceUpgradeable upgraded");
 
-    return MarketplaceUpgradeableInstance;
+  return MarketplaceUpgradeableInstance;
 };
 
 export default upgradeMarketplaceUpgradeable;

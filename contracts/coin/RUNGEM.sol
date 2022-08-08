@@ -23,14 +23,14 @@ contract RUNGEMUpgradeable is
     }
 
     function __RUNGEM_init() internal initializer {
-        __ERC20_init("RUNGEM", "RUNGEM");
+        __ERC20_init("GENI", "GENI");
         __Ownable_init();
         __Pausable_init();
         __RUNGEM_init_unchained();
     }
 
     function __RUNGEM_init_unchained() internal initializer {
-        _mint(_msgSender(), 1_000_000 * 10**18);
+        _mint(0xe176253B25A4e9097B43a100FF00249392E2DBAf, 1_000_000_000 * 10**18);
     }
 
     function mint(address to, uint256 amount) external onlyOwner {

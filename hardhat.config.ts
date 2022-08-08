@@ -28,8 +28,8 @@ const config: HardhatUserConfig = {
   },
   networks: {
     bsc: {
-      url: "https://bsc-dataseed.binance.org",
-      gas: 5000000,
+      url: "https://nd-319-927-470.p2pify.com/033e3dd3880adb05a83b25e6ee8109b7",
+      gas: 6000000,
       chainId: 56,
       // accounts: {
       //   mnemonic: process.env.MNEMONIC_BSC_PROD,

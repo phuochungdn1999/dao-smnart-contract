@@ -263,6 +263,31 @@ contract RunnowNFTUpgradeableV2 is
         return newTokenId;
     }
 
+    function mintFromGameAndBringToGame(
+        address to,
+        string calldata id,
+        string calldata itemType,
+        string calldata extraType
+    ) external returns (uint256) {
+        require(_msgSender() == gameAddress, "Unauthorized");
+
+        // Mint
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+        _mint(gameAddress, newTokenId);
+
+        emit MintFromGameEvent(
+            to,
+            id,
+            itemType,
+            extraType,
+            newTokenId,
+            uint64(block.timestamp)
+        );
+
+        return newTokenId;
+    }
+
     function mintBatch(
         address[] calldata to,
         string[] calldata ids,
@@ -301,5 +326,12 @@ contract RunnowNFTUpgradeableV2 is
 
     function setBaseURI(string memory _baseUri) external{
         baseURI = _baseUri;
+    }
+
+    function burn(uint256 tokenId) external returns(uint256){
+        //burn tokenId
+        _burn(tokenId);
+
+        return tokenId;
     }
 }
