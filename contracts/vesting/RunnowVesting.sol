@@ -292,13 +292,13 @@ contract VestingUpgradeable is OwnableUpgradeable {
         returns (uint256 amount)
     {
         uint256 maxAmount = 20_000_000 * 10**decimals;
-        uint256 publicSaleAmount = 1_000_000 * 10**decimals;
-        uint256 linearAmount = (maxAmount - publicSaleAmount) / 12;
+        uint256 publicSaleAmount = 8_000_000 * 10**decimals;
+        uint256 linearAmount = (maxAmount - publicSaleAmount) / 6;
         if (month == 0) amount = publicSaleAmount;
-        else if (month >= 13) amount = 0;
-        else if (month >= 1 && month <= 11) amount = linearAmount;
-        else if (month == 12)
-            amount = maxAmount - publicSaleAmount - linearAmount * 11;
+        else if (month > 6) amount = 0;
+        else if (month >= 1 && month <= 5) amount = linearAmount;
+        else if (month == 6)
+            amount = maxAmount - publicSaleAmount - linearAmount * 5;
     }
 
     function getDistributeAmountForSeedSale() external view returns (uint256) {
