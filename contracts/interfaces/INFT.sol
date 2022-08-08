@@ -3,7 +3,7 @@
 pragma solidity >=0.8.0;
 
 interface INFT {
-    function mintFromGame(
+    function mintFromGameAndBringToGame(
         address to,
         string calldata id,
         string calldata itemType,

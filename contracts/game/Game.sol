@@ -118,10 +118,7 @@ contract GameUpgradeable is
 
     function depositNativeToken(uint256 amount) public payable {
         require(amount > 0, "Amount must be greater than zero");
-        require(
-            msg.value == amount,
-            "Value must be equal amount"
-        );
+        require(msg.value == amount, "Value must be equal amount");
 
         emit DepositTokenEvent(
             _msgSender(),
@@ -263,7 +260,7 @@ contract GameUpgradeable is
         _noncesMap[data.nonce] = true;
 
         if (data.tokenId == 0) {
-            INFT(data.itemAddress).mintFromGame(
+            INFT(data.itemAddress).mintFromGameAndBringToGame(
                 _msgSender(),
                 data.id,
                 data.itemType,
@@ -275,16 +272,15 @@ contract GameUpgradeable is
                 _msgSender(),
                 data.tokenId
             );
+            emit WithdrawItemEvent(
+                data.id,
+                _msgSender(),
+                data.itemType,
+                data.extraType,
+                data.nonce,
+                uint64(block.timestamp)
+            );
         }
-
-        emit WithdrawItemEvent(
-            data.id,
-            _msgSender(),
-            data.itemType,
-            data.extraType,
-            data.nonce,
-            uint64(block.timestamp)
-        );
     }
 
     function _verifyWithdrawItem(WithdrawItemStruct calldata data)

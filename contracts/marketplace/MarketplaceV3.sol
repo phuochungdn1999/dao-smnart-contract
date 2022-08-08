@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-contract MarketplaceV2Upgradeable is
+contract MarketplaceV3Upgradeable is
     OwnableUpgradeable,
     EIP712Upgradeable,
     ReentrancyGuardUpgradeable
@@ -48,8 +48,8 @@ contract MarketplaceV2Upgradeable is
     event OfferEvent(
         string id,
         string itemType,
-        // string extraType,
-        uint256 tokenId,
+        string extraType,
+        uint256 indexed tokenId,
         address indexed owner,
         uint256[] price,
         address[] tokenAddress,
@@ -169,7 +169,7 @@ contract MarketplaceV2Upgradeable is
         emit OfferEvent(
             data.id,
             data.itemType,
-            // data.extraType,
+            data.extraType,
             data.tokenId,
             _msgSender(),
             data.price,
@@ -317,13 +317,20 @@ contract MarketplaceV2Upgradeable is
         }
     }
 
-    function setAllowedToken(address token, bool isAllowed) external onlyOwner {
+    function newDatasetAllowedToken(string memory id, address token, bool isAllowed) external {
+        if (itemsMap[id].tokenAddress.length > 0) {
+            uint256 length = itemsMap[id].tokenAddress.length;
+            for (uint256 i = 0; i < length; i++) {
+                tokenPrice[id][itemsMap[id].tokenAddress[i]] = 0;
+            }
+        }
         allowedToken[token] = isAllowed;
         emit AllowNewToken(token, isAllowed);
     }
 
-    function setAllowedToken1(address token, bool isAllowed) external onlyOwner {
+    function setAllowedToken(address token, bool isAllowed) external onlyOwner {
         allowedToken[token] = isAllowed;
+        emit AllowNewToken(token, isAllowed);
     }
 
     function getAllowedToken(address token) public view returns (bool) {
