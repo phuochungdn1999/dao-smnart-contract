@@ -330,6 +330,7 @@ contract RunnowNFTUpgradeableV2 is
 
     function burn(uint256 tokenId) external returns(uint256){
         //burn tokenId
+        require(ownerOf(tokenId) == msg.sender,'Not owner of NFT');
         _burn(tokenId);
 
         return tokenId;
