@@ -9,41 +9,41 @@ import "./IRunnow.sol";
 contract VestingUpgradeable is OwnableUpgradeable {
     address public runnow;
 
-    event SetRUNNOW(address geniAddress);
+    event SetRUNNOW(address runnowAddress);
     event SetDistributeTime(uint256 time);
 
     uint256 public distributeTime;
 
-    // uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
-    uint256 private constant SECONDS_PER_MONTH = 5 minutes; //testnet
+    uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
+    // uint256 private constant SECONDS_PER_MONTH = 5 minutes; //testnet
 
     uint256 private constant decimals = 18;
 
     uint256 public lastestDistributeMonth;
 
-    address public  seedSales;
-    address public  privateSales;
-    address public  publicSales;
-    address public  advisorsAndPartners;
-    address public  teamAndOperations;
-    address public  mktAndCommunity;
-    address public  gameTreasury;
-    address public  farmingAndStaking;
-    address public  liquidity;
+    address public seedSales;
+    address public privateSales;
+    address public publicSales;
+    address public advisorsAndPartners;
+    address public teamAndOperations;
+    address public mktAndCommunity;
+    address public gameTreasury;
+    address public farmingAndStaking;
+    address public liquidity;
 
     function initialize() public virtual initializer {
         __vesting_init(
             0xb7b1db1ED12A8DE0fDB16B69844d6b0a3Be47536,
-            1657681200,
-            0x1357ea29093b7bd4e557D0638F7f3113Dd4D504e,
-            0xabD002429daf2A4c383C4491ab968d8Eaeb9AB83,
-            0x924db5A9C038A70bD812E403ebc96DF6271e26ba,
-            0x2A7A70bDADc13eD9c31069B47d3df46058bDC4f5,
-            0xab985ef330f7560B4045D4A1E19A206A36c7479b,
-            0xC08c4Fc41F6F63A47E63505f8492fFfD753A2304,
-            0x6456be06d125C0B7F661E6E09E695AF4d59D58D1,
-            0xeFfe75B1574Bdd2FE0Bc955b57e4f82A2BAD6bF9,
-            0x5bc128b3711d741A0DdedD519d55AA60E60f442c
+            1660957200,
+            0x900B2491Be791b95561E0d3C283E18b0AE755E70,
+            0x84AbF5D1CAE81cB7C661cba58Fc4d15757911128,
+            0x71121E3eaFCb6a1e9b58BBF37C6B7a2E3e93e07d,
+            0x15cB19F2DA6302Dc82ef3bbdfb11A37bD64D346d,
+            0x04394a103f91C0389F9211811dfDCDBE81747924,
+            0x32AdcEE090f422964D8b25b408c95a3623Da0E6B,
+            0xF76A047E8d7D82BE61d21c73a54528D394fc828c,
+            0x7A991826ac855d203b950411513E21990750C08C,
+            0x83e973AF186b7515Cf6Eb9FDdF861b59E49942Fe
         );
         __Ownable_init();
     }
@@ -63,6 +63,55 @@ contract VestingUpgradeable is OwnableUpgradeable {
     ) internal {
         runnow = _runnowAddr;
         distributeTime = _distributeTime;
+        require(
+            _privateSales != address(0),
+            "_privateSales cannot be address 0"
+        );
+        privateSales = _privateSales;
+        require(_publicSales != address(0), "_publicSales cannot be address 0");
+        publicSales = _publicSales;
+        require(
+            _advisorsAndPartners != address(0),
+            "_advisorsAndPartners cannot be address 0"
+        );
+        advisorsAndPartners = _advisorsAndPartners;
+        require(
+            _teamAndOperations != address(0),
+            "_teamAndOperations cannot be address 0"
+        );
+        teamAndOperations = _teamAndOperations;
+        require(
+            _mktAndCommunity != address(0),
+            "_mktAndCommunity cannot be address 0"
+        );
+        mktAndCommunity = _mktAndCommunity;
+        require(
+            _gameTreasury != address(0),
+            "_gameTreasury cannot be address 0"
+        );
+        gameTreasury = _gameTreasury;
+        require(
+            _farmingAndStaking != address(0),
+            "_farmingAndStaking cannot be address 0"
+        );
+        farmingAndStaking = _farmingAndStaking;
+        require(_seedSales != address(0), "_seedSales cannot be address 0");
+        seedSales = _seedSales;
+        require(_liquidity != address(0), "_liquidity cannot be address 0");
+        liquidity = _liquidity;
+    }
+
+    function setAddress(
+        address _seedSales,
+        address _privateSales,
+        address _publicSales,
+        address _advisorsAndPartners,
+        address _teamAndOperations,
+        address _mktAndCommunity,
+        address _gameTreasury,
+        address _farmingAndStaking,
+        address _liquidity
+    ) external onlyOwner {
         require(
             _privateSales != address(0),
             "_privateSales cannot be address 0"
@@ -188,11 +237,10 @@ contract VestingUpgradeable is OwnableUpgradeable {
         returns (uint256 amount)
     {
         uint256 maxAmount = 30_000_000 * 10**decimals;
-        uint256 linearAmount = maxAmount  / 12;
-        if (month < 3 || month > 14) amount =0;
+        uint256 linearAmount = maxAmount / 12;
+        if (month < 3 || month > 14) amount = 0;
         else if (month >= 3 && month <= 13) amount = linearAmount;
-        else if (month == 14)
-            amount = maxAmount - linearAmount * 11;
+        else if (month == 14) amount = maxAmount - linearAmount * 11;
     }
 
     function getAmountForPrivateSales(uint256 month)
@@ -201,11 +249,10 @@ contract VestingUpgradeable is OwnableUpgradeable {
         returns (uint256 amount)
     {
         uint256 maxAmount = 40_000_000 * 10**decimals;
-        uint256 linearAmount = maxAmount  / 12;
+        uint256 linearAmount = maxAmount / 12;
         if (month < 3 || month > 14) amount = 0;
         else if (month >= 3 && month <= 13) amount = linearAmount;
-        else if (month == 14)
-            amount = maxAmount - linearAmount * 11;
+        else if (month == 14) amount = maxAmount - linearAmount * 11;
     }
 
     function getAmountForPublicSales(uint256 month)
@@ -243,7 +290,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
     {
         uint256 maxAmount = 200_000_000 * 10**decimals;
         uint256 linearAmount = maxAmount / 24;
-        if (month >= 0 && month < 12 || month >= 36) amount = 0;
+        if ((month >= 0 && month < 12) || month >= 36) amount = 0;
         else if (month >= 12 && month <= 34) amount = linearAmount;
         else if (month == 35) amount = maxAmount - linearAmount * 23;
     }
@@ -257,7 +304,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
         uint256 publicSaleAmount = 1_000_000 * 10**decimals;
         uint256 linearAmount = (maxAmount - publicSaleAmount) / 36;
         if (month > 36) amount = 0;
-        else if (month == 0 ) amount = publicSaleAmount;
+        else if (month == 0) amount = publicSaleAmount;
         else if (month >= 1 && month <= 35) amount = linearAmount;
         else if (month == 36) amount = maxAmount - linearAmount * 35;
     }
