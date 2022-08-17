@@ -261,13 +261,9 @@ contract VestingUpgradeable is OwnableUpgradeable {
         returns (uint256 amount)
     {
         uint256 maxAmount = 60_000_000 * 10**decimals;
-        uint256 publicSaleAmount = 12_000_000 * 10**decimals;
-        uint256 linearAmount = (maxAmount - publicSaleAmount) / 3;
-        if (month == 0) amount = publicSaleAmount;
-        else if (month == 1 || month > 4) amount = 0;
-        else if (month == 2 || month == 3) amount = linearAmount;
-        else if (month == 4)
-            amount = maxAmount - publicSaleAmount - linearAmount * 2;
+        
+        if (month == 0) amount = maxAmount;
+        else if (month > 0) amount = 0;
     }
 
     function getAmountForAdvisorsAndPartners(uint256 month)
