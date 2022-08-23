@@ -15,6 +15,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
     uint256 public distributeTime;
 
     uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
+    // uint256 private constant SECONDS_PER_MONTH = 10 minutes; //testet
 
     uint256 private constant decimals = 18;
 
@@ -156,6 +157,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
     }
 
     function setDistributeTime(uint256 time) external onlyOwner {
+        require(distributeTime >= block.timestamp,"Can't set new distribute time");
         distributeTime = time;
         emit SetDistributeTime(time);
     }
@@ -226,8 +228,17 @@ contract VestingUpgradeable is OwnableUpgradeable {
             IRunnow(runnow).mint(farmingAndStaking, amountForFarmingAndStaking);
         if (amountForLiquidity > 0)
             IRunnow(runnow).mint(liquidity, amountForLiquidity);
-
-        lastestDistributeMonth = month + 1;
+        if (
+            amountForSeedSale != 0 ||
+            amountForPrivateSale != 0 ||
+            amountForPublicSale != 0 ||
+            amountForAdvisorsAndPartners != 0 ||
+            amountForTeamAndOperations != 0 ||
+            amountForMktAndCommunity != 0 ||
+            amountForGameTreasury != 0 ||
+            amountForFarmingAndStaking != 0 ||
+            amountForLiquidity != 0
+        ) lastestDistributeMonth = month + 1;
     }
 
     function getAmountForSeedSale(uint256 month)
