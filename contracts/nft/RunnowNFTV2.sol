@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "../interfaces/IBlacklist.sol";
 
 contract RunnowNFTUpgradeableV2 is
     ERC721Upgradeable,
@@ -67,13 +68,38 @@ contract RunnowNFTUpgradeableV2 is
         uint64 timestamp
     );
 
+    event Paused(address account);
+
+    event Unpaused(address account);
+
+
     string private constant _SIGNING_DOMAIN = "NFT-Voucher";
     string private constant _SIGNATURE_VERSION = "1";
 
     address public devWalletAddress;
     mapping(string => bool) private _noncesMap;
     CountersUpgradeable.Counter private _tokenIds;
+
     address public gameAddress;
+    address public operator;
+    address public banContractAddress;
+    address public mintBatchAdress;
+    bool private _paused;
+
+    modifier isBanned(address _user) {
+        require(!IBlacklist(banContractAddress).isBanned(_user), "Banned");
+        _;
+    }
+
+    modifier whenPaused() {
+        require(paused(), "Pausable: not paused");
+        _;
+    }
+
+    modifier whenNotPaused() {
+        require(!paused(), "Pausable: paused");
+        _;
+    }
 
     function initialize() public virtual initializer {
         __NFT_init();
@@ -106,25 +132,32 @@ contract RunnowNFTUpgradeableV2 is
         return baseURI;
     }
 
-
-    function redeem(ItemVoucherStruct calldata data) public payable {
+    function redeem(ItemVoucherStruct calldata data)
+        public
+        payable
+        isBanned(_msgSender())
+        whenNotPaused
+    {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyItemVoucher(data);
         // Make sure that the signer is authorized to mint an item
-        require(signer == owner(), "Signature invalid or unauthorized");
+        require(signer == operator, "Signature invalid or unauthorized");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
         _noncesMap[data.nonce] = true;
 
         // Transfer payment
-        if(data.tokenAddress == address(0)){
+        if (data.tokenAddress == address(0)) {
             require(msg.value >= data.price, "Not enough money");
             (bool success, ) = devWalletAddress.call{value: msg.value}("");
             require(success, "Transfer payment failed");
-        }
-        else{
-            IERC20Upgradeable(data.tokenAddress).transferFrom(msg.sender, devWalletAddress, data.price);
+        } else {
+            IERC20Upgradeable(data.tokenAddress).transferFrom(
+                msg.sender,
+                devWalletAddress,
+                data.price
+            );
         }
 
         // Mint
@@ -176,11 +209,14 @@ contract RunnowNFTUpgradeableV2 is
             );
     }
 
-    function openStarterBox(StarterBoxStruct calldata data) public {
+    function openStarterBox(StarterBoxStruct calldata data)
+        public
+        isBanned(_msgSender())
+    {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyStarterBox(data);
         // Make sure that the signer is authorized to open start box
-        require(signer == owner(), "Signature invalid or unauthorized");
+        require(signer == operator, "Signature invalid or unauthorized");
 
         // Check nonce & exists token id
         require(_exists(data.tokenId), "Approved query for nonexistent token");
@@ -245,6 +281,7 @@ contract RunnowNFTUpgradeableV2 is
         string calldata extraType
     ) external returns (uint256) {
         require(_msgSender() == gameAddress, "Unauthorized");
+        require(!IBlacklist(banContractAddress).isBanned(to), "Banned");
 
         // Mint
         _tokenIds.increment();
@@ -270,6 +307,7 @@ contract RunnowNFTUpgradeableV2 is
         string calldata extraType
     ) external returns (uint256) {
         require(_msgSender() == gameAddress, "Unauthorized");
+        require(!IBlacklist(banContractAddress).isBanned(to), "Banned");
 
         // Mint
         _tokenIds.increment();
@@ -294,8 +332,8 @@ contract RunnowNFTUpgradeableV2 is
         string[] calldata itemTypes,
         string[] calldata extraTypes,
         string[] calldata nonces
-    ) external {
-        require(_msgSender() == owner(), "Unauthorized");
+    ) external whenNotPaused {
+        require(_msgSender() == mintBatchAdress, "Unauthorized");
         require(
             to.length == ids.length &&
                 ids.length == itemTypes.length &&
@@ -324,15 +362,41 @@ contract RunnowNFTUpgradeableV2 is
         }
     }
 
-    function setBaseURI(string memory _baseUri) external{
+    function setBaseURI(string memory _baseUri) external {
         baseURI = _baseUri;
     }
 
-    function burn(uint256 tokenId) external returns(uint256){
+    function burn(uint256 tokenId) external returns (uint256) {
         //burn tokenId
-        require(ownerOf(tokenId) == msg.sender,'Not owner of NFT');
+        require(ownerOf(tokenId) == msg.sender, "Not owner of NFT");
         _burn(tokenId);
 
         return tokenId;
+    }
+
+    function setOperator(address _operator) external onlyOwner {
+        operator = _operator;
+    }
+
+    function setBanContractAddress(address data) external onlyOwner {
+        banContractAddress = data;
+    }
+
+    function setMintBatchAdress(address data) external onlyOwner {
+        mintBatchAdress = data;
+    }
+
+    function paused() public view virtual returns (bool) {
+        return _paused;
+    }
+
+    function setPause() onlyOwner external whenNotPaused {
+        _paused = true;
+        emit Paused(_msgSender());
+    }
+
+    function setUnpause()onlyOwner external whenPaused {
+        _paused = false;
+        emit Unpaused(_msgSender());
     }
 }

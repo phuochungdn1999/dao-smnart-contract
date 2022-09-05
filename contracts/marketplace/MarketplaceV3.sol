@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "../interfaces/IBlacklist.sol";
 
 contract MarketplaceV3Upgradeable is
     OwnableUpgradeable,
@@ -79,6 +80,10 @@ contract MarketplaceV3Upgradeable is
 
     event AllowNewToken(address token, bool isAllowed);
 
+    event Paused(address account);
+
+    event Unpaused(address account);
+
     string public constant _SIGNING_DOMAIN = "Marketplace-Item";
     string private constant _SIGNATURE_VERSION = "1";
 
@@ -88,6 +93,25 @@ contract MarketplaceV3Upgradeable is
     mapping(string => bool) private _noncesMap;
     mapping(string => mapping(address => uint256)) private tokenPrice;
     mapping(address => bool) private allowedToken;
+
+    address public operator;
+    address public banContractAddress;
+    bool private _paused;
+
+    modifier isBanned(address _user) {
+        require(!IBlacklist(banContractAddress).isBanned(_user), "Banned");
+        _;
+    }
+
+    modifier whenPaused() {
+        require(paused(), "Pausable: not paused");
+        _;
+    }
+
+    modifier whenNotPaused() {
+        require(!paused(), "Pausable: paused");
+        _;
+    }
 
     function initialize() public virtual initializer {
         __Marketplace_init();
@@ -113,11 +137,16 @@ contract MarketplaceV3Upgradeable is
         feesCollectorCutPerMillion = data;
     }
 
-    function offer(OrderItemStruct calldata data) public nonReentrant {
+    function offer(OrderItemStruct calldata data)
+        public
+        nonReentrant
+        isBanned(_msgSender())
+        whenNotPaused
+    {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyOrderItem(data);
         // Make sure that the signer is authorized to offer item
-        require(signer == owner(), "Signature invalid or unauthorized");
+        require(signer == operator, "Signature invalid or unauthorized");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
@@ -151,7 +180,7 @@ contract MarketplaceV3Upgradeable is
             itemAddress: data.itemAddress,
             tokenId: data.tokenId,
             owner: _msgSender(),
-            price:0,
+            price: 0,
             priceList: data.price,
             tokenAddress: data.tokenAddress,
             isExist: true
@@ -213,11 +242,11 @@ contract MarketplaceV3Upgradeable is
             );
     }
 
-    function buy(string memory id, address tokenAddress,uint256 amount)
-        public
-        payable
-        nonReentrant
-    {
+    function buy(
+        string memory id,
+        address tokenAddress,
+        uint256 amount
+    ) public payable nonReentrant isBanned(_msgSender()) whenNotPaused {
         // Check exists & don't buy own
         require(itemsMap[id].isExist, "Item is not in marketplace");
         require(
@@ -236,7 +265,11 @@ contract MarketplaceV3Upgradeable is
 
         // Transfer payment
         if (tokenAddress == address(0)) {
-            require(msg.value == amount && msg.value == tokenPrice[id][tokenAddress],"Not same price");
+            require(
+                msg.value == amount &&
+                    msg.value == tokenPrice[id][tokenAddress],
+                "Not same price"
+            );
             //transfer with BNB
             if (totalFeesShareAmount > 0) {
                 (bool success, ) = feesCollectorAddress.call{
@@ -248,7 +281,7 @@ contract MarketplaceV3Upgradeable is
             (bool success, ) = item.owner.call{value: ownerShareAmount}("");
             require(success, "Transfer money failed");
         } else {
-            require(amount == tokenPrice[id][tokenAddress],"Not same price");
+            require(amount == tokenPrice[id][tokenAddress], "Not same price");
             // transfer with token
             IERC20Upgradeable(tokenAddress).transferFrom(
                 _msgSender(),
@@ -284,7 +317,12 @@ contract MarketplaceV3Upgradeable is
         delete itemsMap[id];
     }
 
-    function withdraw(string memory id) public nonReentrant {
+    function withdraw(string memory id)
+        public
+        nonReentrant
+        isBanned(_msgSender())
+        whenNotPaused
+    {
         require(itemsMap[id].owner == _msgSender(), "You don't own this item");
 
         ItemStruct memory item = itemsMap[id];
@@ -324,5 +362,27 @@ contract MarketplaceV3Upgradeable is
 
     function getAllowedToken(address token) public view returns (bool) {
         return allowedToken[token];
+    }
+
+    function setOperator(address _operator) external onlyOwner {
+        operator = _operator;
+    }
+
+    function setBanContractAddress(address data) external onlyOwner {
+        banContractAddress = data;
+    }
+
+    function paused() public view virtual returns (bool) {
+        return _paused;
+    }
+
+    function setPause() onlyOwner external whenNotPaused {
+        _paused = true;
+        emit Paused(_msgSender());
+    }
+
+    function setUnpause()onlyOwner external whenPaused {
+        _paused = false;
+        emit Unpaused(_msgSender());
     }
 }
