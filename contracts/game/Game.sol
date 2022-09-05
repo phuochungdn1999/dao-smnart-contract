@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "../interfaces/INFT.sol";
+import "../interfaces/IBlacklist.sol";
 
 contract GameUpgradeable is
     OwnableUpgradeable,
@@ -80,10 +81,34 @@ contract GameUpgradeable is
         uint64 timestamp
     );
 
+    event Paused(address account);
+
+    event Unpaused(address account);
+
     string private constant _SIGNING_DOMAIN = "NFT-Voucher";
     string private constant _SIGNATURE_VERSION = "1";
 
     mapping(string => bool) private _noncesMap;
+
+    address public operator;
+    address public banContractAddress;
+    bool private _paused;
+
+    modifier isBanned(address _user) {
+        require(!IBlacklist(banContractAddress).isBanned(_user), "Banned");
+        _;
+    }
+
+    modifier whenPaused() {
+        require(paused(), "Pausable: not paused");
+        _;
+    }
+
+    modifier whenNotPaused() {
+        require(!paused(), "Pausable: paused");
+        _;
+    }
+
 
     function initialize() public virtual initializer {
         __Game_init();
@@ -98,7 +123,11 @@ contract GameUpgradeable is
 
     function __Game_init_unchained() internal initializer {}
 
-    function depositToken(uint256 amount, address tokenAddress) public {
+    function depositToken(uint256 amount, address tokenAddress)
+        public
+        isBanned(_msgSender())
+        whenNotPaused
+    {
         require(amount > 0, "Amount must be greater than zero");
 
         IERC20Upgradeable(tokenAddress).transferFrom(
@@ -116,7 +145,12 @@ contract GameUpgradeable is
         );
     }
 
-    function depositNativeToken(uint256 amount) public payable {
+    function depositNativeToken(uint256 amount)
+        public
+        payable
+        isBanned(_msgSender())
+        whenNotPaused
+    {
         require(amount > 0, "Amount must be greater than zero");
         require(msg.value == amount, "Value must be equal amount");
 
@@ -133,11 +167,13 @@ contract GameUpgradeable is
         public
         payable
         nonReentrant
+        isBanned(_msgSender())
+        whenNotPaused
     {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyWithdrawToken(data);
         // Make sure that the signer is authorized to withdraw tokens
-        require(signer == owner(), "Signature invalid or unauthorized");
+        require(signer == operator, "Signature invalid or unauthorized");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
@@ -190,11 +226,11 @@ contract GameUpgradeable is
             );
     }
 
-    function depositItem(DepositItemStruct calldata data) public {
+    function depositItem(DepositItemStruct calldata data) public whenNotPaused {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyDepositItem(data);
         // Make sure that the signer is authorized to deposit an item
-        require(signer == owner(), "Signature invalid or unauthorized");
+        require(signer == operator, "Signature invalid or unauthorized");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
@@ -249,11 +285,15 @@ contract GameUpgradeable is
             );
     }
 
-    function withdrawItem(WithdrawItemStruct calldata data) public {
+    function withdrawItem(WithdrawItemStruct calldata data)
+        public
+        isBanned(_msgSender())
+        whenNotPaused
+    {
         // Make sure signature is valid and get the address of the signer
         address signer = _verifyWithdrawItem(data);
         // Make sure that the signer is authorized to withdraw an item
-        require(signer == owner(), "Signature invalid or unauthorized");
+        require(signer == operator, "Signature invalid or unauthorized");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
@@ -314,5 +354,27 @@ contract GameUpgradeable is
                     )
                 )
             );
+    }
+
+    function setOperator(address _operator) external onlyOwner {
+        operator = _operator;
+    }
+
+    function setBanContractAddress(address data) external onlyOwner {
+        banContractAddress = data;
+    }
+
+    function paused() public view virtual returns (bool) {
+        return _paused;
+    }
+
+    function setPause() onlyOwner external whenNotPaused {
+        _paused = true;
+        emit Paused(_msgSender());
+    }
+
+    function setUnpause()onlyOwner external whenPaused {
+        _paused = false;
+        emit Unpaused(_msgSender());
     }
 }
