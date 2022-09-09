@@ -51,7 +51,27 @@ contract GameUpgradeable is
         bytes signature;
     }
 
+    struct DepositItemFromNFTStruct {
+        string id;
+        address itemAddress;
+        uint256 tokenId;
+        string itemType;
+        string extraType;
+        string nonce;
+        bytes signature;
+    }
+
     event DepositItemEvent(
+        string id,
+        address indexed user,
+        address itemAddress,
+        uint256 tokenId,
+        string itemType,
+        string extraType,
+        uint64 timestamp
+    );
+
+    event DepositItemFromNFTEvent(
         string id,
         address indexed user,
         address itemAddress,
@@ -94,8 +114,15 @@ contract GameUpgradeable is
     address public banContractAddress;
     bool private _paused;
 
+    address public nftAddress;
+
     modifier isBanned(address _user) {
         require(!IBlacklist(banContractAddress).isBanned(_user), "Banned");
+        _;
+    }
+
+    modifier onlyNFT() {
+        require(_msgSender() == nftAddress, "Not NFT address");
         _;
     }
 
@@ -108,7 +135,6 @@ contract GameUpgradeable is
         require(!paused(), "Pausable: paused");
         _;
     }
-
 
     function initialize() public virtual initializer {
         __Game_init();
@@ -368,13 +394,79 @@ contract GameUpgradeable is
         return _paused;
     }
 
-    function setPause() onlyOwner external whenNotPaused {
+    function setPause() external onlyOwner whenNotPaused {
         _paused = true;
         emit Paused(_msgSender());
     }
 
-    function setUnpause()onlyOwner external whenPaused {
+    function setUnpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(_msgSender());
+    }
+
+    function setNFTAddress(address _nftAddress) external onlyOwner {
+        nftAddress = _nftAddress;
+    }
+
+    function depositItemFromNFT(DepositItemStruct calldata data)
+        public
+        whenNotPaused
+        onlyNFT
+    {
+        // Make sure signature is valid and get the address of the signer
+        // address signer = _verifyDepositItem(data);
+        // Make sure that the signer is authorized to deposit an item
+        // require(signer == operator, "Signature invalid or unauthorized1");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        IERC721Upgradeable(data.itemAddress).transferFrom(
+            _msgSender(),
+            address(this),
+            data.tokenId
+        );
+
+        emit DepositItemFromNFTEvent(
+            data.id,
+            _msgSender(),
+            data.itemAddress,
+            data.tokenId,
+            data.itemType,
+            data.extraType,
+            uint64(block.timestamp)
+        );
+    }
+
+    function _verifyDepositItemFromNFT(DepositItemFromNFTStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashDepositItemFromNFT(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashDepositItemFromNFT(DepositItemFromNFTStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "DepositItemFromNFTStruct(string id,address itemAddress,string itemType,string extraType,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        data.itemAddress,
+                        keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.extraType)),
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
     }
 }

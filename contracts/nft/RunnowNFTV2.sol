@@ -11,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "../interfaces/IBlacklist.sol";
+import "../interfaces/IGame.sol";
 
 contract RunnowNFTUpgradeableV2 is
     ERC721Upgradeable,
@@ -52,7 +53,34 @@ contract RunnowNFTUpgradeableV2 is
         bytes signature;
     }
 
+    struct NanoBoxStruct {
+        address walletAddress;
+        string id;
+        string nonce;
+        bytes signatureNFT;
+        string itemType;
+        string extraType;
+        bytes signatureGame;
+    }
+
+    struct DepositItemFromNFTStruct {
+        string id;
+        address itemAddress;
+        uint256 tokenId;
+        string itemType;
+        string extraType;
+        string nonce;
+        bytes signature;
+    }
+
     event OpenStarterBoxEvent(
+        address indexed user,
+        string id,
+        uint256[] tokenIds,
+        uint64 timestamp
+    );
+
+    event OpenNanoBoxEvent(
         address indexed user,
         string id,
         uint256[] tokenIds,
@@ -72,7 +100,6 @@ contract RunnowNFTUpgradeableV2 is
 
     event Unpaused(address account);
 
-
     string private constant _SIGNING_DOMAIN = "NFT-Voucher";
     string private constant _SIGNATURE_VERSION = "1";
 
@@ -85,6 +112,8 @@ contract RunnowNFTUpgradeableV2 is
     address public banContractAddress;
     address public mintBatchAdress;
     bool private _paused;
+    address public mktAddress;
+
 
     modifier isBanned(address _user) {
         require(!IBlacklist(banContractAddress).isBanned(_user), "Banned");
@@ -390,13 +419,107 @@ contract RunnowNFTUpgradeableV2 is
         return _paused;
     }
 
-    function setPause() onlyOwner external whenNotPaused {
+    function setMarketplaceAddress(address data) external onlyOwner {
+        mktAddress = data;
+    }
+
+    function setPause() external onlyOwner whenNotPaused {
         _paused = true;
         emit Paused(_msgSender());
     }
 
-    function setUnpause()onlyOwner external whenPaused {
+    function setUnpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(_msgSender());
     }
+
+    function openNanoBox(NanoBoxStruct calldata data)
+        public
+        isBanned(_msgSender())
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyNanoBox(data);
+        // Make sure that the signer is authorized to open start box
+        require(signer == operator, "Signature invalid or unauthorized");
+
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        // Mint sneaker nano and medal
+        uint256[] memory tokenIds = new uint256[](2);
+
+        //Mint sneaker
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+        _mint(address(this), newTokenId);
+        tokenIds[0] = newTokenId;
+        _approve(gameAddress, newTokenId);
+
+        //  depositItem;
+        IGame.DepositItemFromNFTStruct memory depositItem = IGame
+            .DepositItemFromNFTStruct(
+                data.id,
+                address(this),
+                newTokenId,
+                data.itemType,
+                data.extraType,
+                data.nonce,
+                data.signatureGame
+            );
+
+        //Mint medal
+        _tokenIds.increment();
+        newTokenId = _tokenIds.current();
+        _mint(_msgSender(), newTokenId);
+        tokenIds[1] = newTokenId;
+
+        emit OpenNanoBoxEvent(
+            _msgSender(),
+            data.id,
+            tokenIds,
+            uint64(block.timestamp)
+        );
+        IGame(gameAddress).depositItemFromNFT(depositItem);
+    }
+
+    function _verifyNanoBox(NanoBoxStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashNanoBox(data);
+        return ECDSAUpgradeable.recover(digest, data.signatureNFT);
+    }
+
+    function _hashNanoBox(NanoBoxStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "NanoBoxStruct(address walletAddress,string id,string nonce)"
+                        ),
+                        _msgSender(),
+                        keccak256(bytes(data.id)),
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
+    // function transferFrom(
+    //     address from,
+    //     address to,
+    //     uint256 tokenId
+    // ) public virtual override {
+    //     //solhint-disable-next-line max-line-length
+    //     require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+    //     require(_msgSender() == gameAddress || _msgSender() == mktAddress,"Address not allow to transfer");
+
+    //     _transfer(from, to, tokenId);
+    // }
 }
