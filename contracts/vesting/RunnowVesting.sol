@@ -14,8 +14,8 @@ contract VestingUpgradeable is OwnableUpgradeable {
 
     uint256 public distributeTime;
 
-    // uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
-    uint256 private constant SECONDS_PER_MONTH = 1 minutes; //testet
+    uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
+    // uint256 private constant SECONDS_PER_MONTH = 1 minutes; //testet
 
 
     uint256 private constant decimals = 18;
