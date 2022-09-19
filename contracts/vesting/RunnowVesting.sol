@@ -15,7 +15,8 @@ contract VestingUpgradeable is OwnableUpgradeable {
     uint256 public distributeTime;
 
     uint256 private constant SECONDS_PER_MONTH = 30 days; //mainnet
-    // uint256 private constant SECONDS_PER_MONTH = 10 minutes; //testet
+    // uint256 private constant SECONDS_PER_MONTH = 1 minutes; //testet
+
 
     uint256 private constant decimals = 18;
 
@@ -33,8 +34,8 @@ contract VestingUpgradeable is OwnableUpgradeable {
 
     function initialize() public virtual initializer {
         __vesting_init(
-            0xdbFb29c31EC05930d7a2423E93d8D0668706fd85,
-            1663376400,
+            0x818Dc066163900591E4b52C3536A713D5d701eD3,
+            1665824400,
             0x900B2491Be791b95561E0d3C283E18b0AE755E70,
             0x84AbF5D1CAE81cB7C661cba58Fc4d15757911128,
             0x71121E3eaFCb6a1e9b58BBF37C6B7a2E3e93e07d,
@@ -246,11 +247,15 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 30_000_000 * 10**decimals;
-        uint256 linearAmount = maxAmount / 12;
-        if (month < 3 || month > 14) amount = 0;
-        else if (month >= 3 && month <= 13) amount = linearAmount;
-        else if (month == 14) amount = maxAmount - linearAmount * 11;
+        uint256 maxAmount = 100_000_000 * 10**decimals;
+        uint256 publicSaleAmount = 10_000_000 * 10**decimals;
+        uint256 linearAmount = (maxAmount - publicSaleAmount) / 12;
+        if (month == 0) amount = publicSaleAmount;
+        else if (month >= 1 && month <= 5 ) amount = 0;
+        else if (month >= 18 ) amount = 0;
+        else if (month >= 6 && month <=16 ) amount = linearAmount;
+        else if (month == 17)
+            amount = maxAmount - publicSaleAmount - linearAmount * 11;
     }
 
     function getAmountForPrivateSales(uint256 month)
@@ -258,11 +263,15 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 40_000_000 * 10**decimals;
-        uint256 linearAmount = maxAmount / 12;
-        if (month < 3 || month > 14) amount = 0;
-        else if (month >= 3 && month <= 13) amount = linearAmount;
-        else if (month == 14) amount = maxAmount - linearAmount * 11;
+        uint256 maxAmount = 200_000_000 * 10**decimals;
+        uint256 publicSaleAmount = 30_000_000 * 10**decimals;
+        uint256 linearAmount = (maxAmount - publicSaleAmount) / 12;
+        if (month == 0) amount = publicSaleAmount;
+        else if (month >= 1 && month <= 4 ) amount = 0;
+        else if (month >= 18 ) amount = 0;
+        else if (month >= 5 && month <=15 ) amount = linearAmount;
+        else if (month == 16)
+            amount = maxAmount - publicSaleAmount - linearAmount * 11;
     }
 
     function getAmountForPublicSales(uint256 month)
@@ -270,10 +279,15 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 60_000_000 * 10**decimals;
-
-        if (month == 0) amount = maxAmount;
-        else if (month > 0) amount = 0;
+        uint256 maxAmount = 400_000_000 * 10**decimals;
+        uint256 publicSaleAmount = 80_000_000 * 10**decimals;
+        uint256 linearAmount = (maxAmount - publicSaleAmount) / 6;
+        if (month == 0) amount = publicSaleAmount;
+        else if (month == 1 ) amount = 0;
+        else if (month >= 8 ) amount = 0;
+        else if (month >= 2 && month <=6 ) amount = linearAmount;
+        else if (month == 7)
+            amount = maxAmount - publicSaleAmount - linearAmount * 5;
     }
 
     function getAmountForAdvisorsAndPartners(uint256 month)
@@ -281,12 +295,12 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 50_000_000 * 10**decimals;
+        uint256 maxAmount = 250_000_000 * 10**decimals;
         uint256 linearAmount = maxAmount / 24;
         if (month >= 0 && month < 12) amount = 0;
         else if (month >= 12 && month <= 34) amount = linearAmount;
         else if (month == 35) amount = maxAmount - linearAmount * 23;
-        else if (month == 36) amount = 0;
+        else if (month >= 36) amount = 0;
     }
 
     function getAmountForTeamAndOperations(uint256 month)
@@ -294,11 +308,12 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 200_000_000 * 10**decimals;
+        uint256 maxAmount = 1_000_000_000 * 10**decimals;
         uint256 linearAmount = maxAmount / 24;
-        if ((month >= 0 && month < 12) || month >= 36) amount = 0;
+        if (month >= 0 && month < 12) amount = 0;
         else if (month >= 12 && month <= 34) amount = linearAmount;
         else if (month == 35) amount = maxAmount - linearAmount * 23;
+        else if (month >= 36) amount = 0;
     }
 
     function getAmountForMktAndCommunity(uint256 month)
@@ -306,13 +321,13 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 100_000_000 * 10**decimals;
-        uint256 publicSaleAmount = 1_000_000 * 10**decimals;
+        uint256 maxAmount = 500_000_000 * 10**decimals;
+        uint256 publicSaleAmount = 5_000_000 * 10**decimals;
         uint256 linearAmount = (maxAmount - publicSaleAmount) / 36;
         if (month > 36) amount = 0;
         else if (month == 0) amount = publicSaleAmount;
         else if (month >= 1 && month <= 35) amount = linearAmount;
-        else if (month == 36) amount = maxAmount - linearAmount * 35;
+        else if (month == 36) amount = maxAmount - publicSaleAmount - linearAmount * 35;
     }
 
     function getAmountForGameTreasury(uint256 month)
@@ -320,7 +335,7 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 350_000_000 * 10**decimals;
+        uint256 maxAmount = 1_750_000_000 * 10**decimals;
         uint256 linearAmount = maxAmount / 36;
         if (month > 36 || month == 0) amount = 0;
         else if (month >= 1 && month < 36) amount = linearAmount;
@@ -332,11 +347,11 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 150_000_000 * 10**decimals;
-        uint256 linearAmount = maxAmount / 36;
-        if (month > 36 || month == 0) amount = 0;
-        else if (month > 0 && month <= 35) amount = linearAmount;
-        else if (month == 36) amount = maxAmount - linearAmount * 35;
+        uint256 maxAmount = 750_000_000 * 10**decimals;
+        uint256 linearAmount = maxAmount / 32;
+        if (month > 36 || month <= 4) amount = 0;
+        else if (month >= 5 && month <= 35) amount = linearAmount;
+        else if (month == 36) amount = maxAmount - linearAmount * 31;
     }
 
     function getAmountForLiquidity(uint256 month)
@@ -344,14 +359,14 @@ contract VestingUpgradeable is OwnableUpgradeable {
         view
         returns (uint256 amount)
     {
-        uint256 maxAmount = 20_000_000 * 10**decimals;
-        uint256 publicSaleAmount = 8_000_000 * 10**decimals;
-        uint256 linearAmount = (maxAmount - publicSaleAmount) / 6;
+        uint256 maxAmount = 50_000_000 * 10**decimals;
+        uint256 publicSaleAmount = 10_000_000 * 10**decimals;
+        uint256 linearAmount = (maxAmount - publicSaleAmount) / 2;
         if (month == 0) amount = publicSaleAmount;
-        else if (month > 6) amount = 0;
-        else if (month >= 1 && month <= 5) amount = linearAmount;
-        else if (month == 6)
-            amount = maxAmount - publicSaleAmount - linearAmount * 5;
+        else if (month > 2) amount = 0;
+        else if (month == 1 ) amount = linearAmount;
+        else if (month == 2)
+            amount = maxAmount - publicSaleAmount - linearAmount;
     }
 
     function getDistributeAmountForSeedSale() external view returns (uint256) {
