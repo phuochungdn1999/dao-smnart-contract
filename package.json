@@ -28,6 +28,7 @@
     "updateMarketplace:bsc": "npx hardhat run ./scripts/marketplace/upgradeMarketplaceMain.ts --network bsc",
     "updateGame:bsc": "npx hardhat run ./scripts/game/upgradeGameMain.ts --network bsc",
     "updateVesting:bsc": "npx hardhat run ./scripts/vesting/upgradeVestingMain.ts --network bsc",
+    "updateRunnow:bsc": "npx hardhat run ./scripts/coin/upgradeRunnowMain.ts --network bsc",
     "verify:bsc":" npx hardhat verify  0x24e3eB44af807b54B8F425e25c1e4Eb575759aEC --network bsc"
   },
   "devDependencies": {
