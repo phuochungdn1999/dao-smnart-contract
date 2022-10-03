@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 
-contract SeedSalesUpgradeable is
+contract IDOBuyUpgradeable is
     OwnableUpgradeable,
     EIP712Upgradeable,
     ReentrancyGuardUpgradeable

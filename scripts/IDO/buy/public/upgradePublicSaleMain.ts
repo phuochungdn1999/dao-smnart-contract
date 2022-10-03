@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import upgradePublicSalesUpgradeable from './upgradePublicSale';
 
-const upgradePublicSalesUpgradeableMain = async (baseAddress: string, version: string = 'PublicSalesUpgradeable') => {
+const upgradePublicSalesUpgradeableMain = async (baseAddress: string, version: string = 'IDOBuyUpgradeable') => {
     await upgradePublicSalesUpgradeable(baseAddress, (await ethers.getSigners())[0], version);
 };
 
