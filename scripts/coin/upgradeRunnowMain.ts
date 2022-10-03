@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import upgradeRunnowUpgradeable from './upgradeRunnow';
 
-const upgradeRunnowUpgradeableMain = async (baseAddress: string, version: string = 'RunnowUpgradeable') => {
+const upgradeRunnowUpgradeableMain = async (baseAddress: string, version: string = 'RUNNOWUpgradeable') => {
     await upgradeRunnowUpgradeable(baseAddress, (await ethers.getSigners())[0], version);
 };
 
