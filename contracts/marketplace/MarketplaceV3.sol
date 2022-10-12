@@ -11,6 +11,8 @@ import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "../interfaces/IBlacklist.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+
 
 contract MarketplaceV3Upgradeable is
     OwnableUpgradeable,
@@ -19,6 +21,7 @@ contract MarketplaceV3Upgradeable is
 {
     using StringsUpgradeable for uint256;
     using CountersUpgradeable for CountersUpgradeable.Counter;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct ItemStruct {
         string id;
@@ -160,7 +163,7 @@ contract MarketplaceV3Upgradeable is
         );
 
         if (!itemsMap[data.id].isExist) {
-            IERC721Upgradeable(data.itemAddress).transferFrom(
+            IERC721Upgradeable(data.itemAddress).safeTransferFrom(
                 _msgSender(),
                 address(this),
                 data.tokenId
@@ -283,19 +286,19 @@ contract MarketplaceV3Upgradeable is
         } else {
             require(amount == tokenPrice[id][tokenAddress], "Not same price");
             // transfer with token
-            IERC20Upgradeable(tokenAddress).transferFrom(
+            IERC20Upgradeable(tokenAddress).safeTransferFrom(
                 _msgSender(),
                 feesCollectorAddress,
                 totalFeesShareAmount
             );
-            IERC20Upgradeable(tokenAddress).transferFrom(
+            IERC20Upgradeable(tokenAddress).safeTransferFrom(
                 _msgSender(),
                 item.owner,
                 ownerShareAmount
             );
         }
 
-        IERC721Upgradeable(item.itemAddress).transferFrom(
+        IERC721Upgradeable(item.itemAddress).safeTransferFrom(
             address(this),
             _msgSender(),
             item.tokenId
@@ -327,7 +330,7 @@ contract MarketplaceV3Upgradeable is
 
         ItemStruct memory item = itemsMap[id];
 
-        IERC721Upgradeable(item.itemAddress).transferFrom(
+        IERC721Upgradeable(item.itemAddress).safeTransferFrom(
             address(this),
             _msgSender(),
             item.tokenId

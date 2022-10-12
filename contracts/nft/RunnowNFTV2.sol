@@ -13,6 +13,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "../interfaces/IBlacklist.sol";
 import "../interfaces/IGame.sol";
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+
 contract RunnowNFTUpgradeableV2 is
     ERC721Upgradeable,
     OwnableUpgradeable,
@@ -20,6 +22,7 @@ contract RunnowNFTUpgradeableV2 is
 {
     using StringsUpgradeable for uint256;
     using CountersUpgradeable for CountersUpgradeable.Counter;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     string private baseURI;
 
@@ -29,6 +32,7 @@ contract RunnowNFTUpgradeableV2 is
         string extraType;
         uint256 price;
         address tokenAddress;
+        address receiver;
         string nonce;
         bytes signature;
     }
@@ -114,7 +118,6 @@ contract RunnowNFTUpgradeableV2 is
     bool private _paused;
     address public mktAddress;
 
-
     modifier isBanned(address _user) {
         require(!IBlacklist(banContractAddress).isBanned(_user), "Banned");
         _;
@@ -171,6 +174,7 @@ contract RunnowNFTUpgradeableV2 is
         address signer = _verifyItemVoucher(data);
         // Make sure that the signer is authorized to mint an item
         require(signer == operator, "Signature invalid or unauthorized");
+        require(_msgSender() == data.receiver, "Wrong calller and receiver");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
@@ -182,7 +186,7 @@ contract RunnowNFTUpgradeableV2 is
             (bool success, ) = devWalletAddress.call{value: msg.value}("");
             require(success, "Transfer payment failed");
         } else {
-            IERC20Upgradeable(data.tokenAddress).transferFrom(
+            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
                 msg.sender,
                 devWalletAddress,
                 data.price
@@ -225,13 +229,14 @@ contract RunnowNFTUpgradeableV2 is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,address tokenAddress,string nonce)"
+                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,address tokenAddress,address receiver,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
                         keccak256(bytes(data.extraType)),
                         data.price,
                         data.tokenAddress,
+                        data.receiver,
                         keccak256(bytes(data.nonce))
                     )
                 )
@@ -510,16 +515,4 @@ contract RunnowNFTUpgradeableV2 is
                 )
             );
     }
-
-    // function transferFrom(
-    //     address from,
-    //     address to,
-    //     uint256 tokenId
-    // ) public virtual override {
-    //     //solhint-disable-next-line max-line-length
-    //     require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
-    //     require(_msgSender() == gameAddress || _msgSender() == mktAddress,"Address not allow to transfer");
-
-    //     _transfer(from, to, tokenId);
-    // }
 }

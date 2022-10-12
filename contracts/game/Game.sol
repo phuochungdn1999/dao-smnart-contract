@@ -10,6 +10,8 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "../interfaces/INFT.sol";
 import "../interfaces/IBlacklist.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+
 
 contract GameUpgradeable is
     OwnableUpgradeable,
@@ -17,6 +19,7 @@ contract GameUpgradeable is
     ReentrancyGuardUpgradeable
 {
     using StringsUpgradeable for uint256;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct WithdrawTokenStruct {
         address walletAddress;
@@ -156,7 +159,7 @@ contract GameUpgradeable is
     {
         require(amount > 0, "Amount must be greater than zero");
 
-        IERC20Upgradeable(tokenAddress).transferFrom(
+        IERC20Upgradeable(tokenAddress).safeTransferFrom(
             _msgSender(),
             address(this),
             amount
@@ -208,7 +211,7 @@ contract GameUpgradeable is
         if (data.isNativeToken) {
             payable(_msgSender()).transfer(data.amount);
         } else {
-            IERC20Upgradeable(data.tokenAddress).transfer(
+            IERC20Upgradeable(data.tokenAddress).safeTransfer(
                 _msgSender(),
                 data.amount
             );
@@ -262,7 +265,7 @@ contract GameUpgradeable is
         require(!_noncesMap[data.nonce], "The nonce has been used");
         _noncesMap[data.nonce] = true;
 
-        IERC721Upgradeable(data.itemAddress).transferFrom(
+        IERC721Upgradeable(data.itemAddress).safeTransferFrom(
             _msgSender(),
             address(this),
             data.tokenId
@@ -422,7 +425,7 @@ contract GameUpgradeable is
         require(!_noncesMap[data.nonce], "The nonce has been used");
         _noncesMap[data.nonce] = true;
 
-        IERC721Upgradeable(data.itemAddress).transferFrom(
+        IERC721Upgradeable(data.itemAddress).safeTransferFrom(
             _msgSender(),
             address(this),
             data.tokenId

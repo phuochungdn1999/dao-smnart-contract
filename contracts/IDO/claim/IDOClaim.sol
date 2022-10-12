@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
 contract IDOClaimUpgradeable is
     OwnableUpgradeable,
@@ -14,6 +15,7 @@ contract IDOClaimUpgradeable is
     ReentrancyGuardUpgradeable
 {
     using StringsUpgradeable for uint256;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct ClaimStruct {
         uint256 amount;
@@ -57,9 +59,15 @@ contract IDOClaimUpgradeable is
         _;
     }
 
-    modifier checkMonthAndNonce(uint256[] calldata month, string calldata nonce) {
-        for(uint256 i=0;i< month.length;i++){
-            require(!_monthsMap[_msgSender()][month[i]],"Month already withdraw");
+    modifier checkMonthAndNonce(
+        uint256[] calldata month,
+        string calldata nonce
+    ) {
+        for (uint256 i = 0; i < month.length; i++) {
+            require(
+                !_monthsMap[_msgSender()][month[i]],
+                "Month already withdraw"
+            );
             _monthsMap[_msgSender()][month[i]] = true;
         }
         require(!_noncesMap[nonce], "nonce already used");
@@ -86,7 +94,7 @@ contract IDOClaimUpgradeable is
         public
         whenNotPaused
         nonReentrant
-        checkMonthAndNonce(claimStruct.month,claimStruct.nonce)
+        checkMonthAndNonce(claimStruct.month, claimStruct.nonce)
     {
         address signer = _verifyClaim(claimStruct);
         require(operator == signer, "Signature invalid or unauthorized");
@@ -100,11 +108,11 @@ contract IDOClaimUpgradeable is
         );
 
         _noncesMap[claimStruct.nonce] = true;
-        for(uint256 i=0;i< claimStruct.month.length;i++){
+        for (uint256 i = 0; i < claimStruct.month.length; i++) {
             _monthsMap[_msgSender()][claimStruct.month[i]] = true;
         }
 
-        IERC20Upgradeable(claimStruct.tokenAddress).transfer(
+        IERC20Upgradeable(claimStruct.tokenAddress).safeTransfer(
             claimStruct.receiver,
             claimStruct.amount
         );
