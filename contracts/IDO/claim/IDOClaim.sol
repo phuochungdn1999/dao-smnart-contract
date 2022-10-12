@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-
 contract IDOClaimUpgradeable is
     OwnableUpgradeable,
     EIP712Upgradeable,
@@ -18,9 +17,10 @@ contract IDOClaimUpgradeable is
 
     struct ClaimStruct {
         uint256 amount;
+        uint256[] month;
         address receiver;
         address tokenAddress;
-        string[] nonceArray;
+        string nonce;
         bytes signature;
     }
 
@@ -28,7 +28,8 @@ contract IDOClaimUpgradeable is
         address indexed user,
         address tokenAddress,
         uint256 amount,
-        string[] nonce;
+        uint256[] month,
+        string nonce,
         uint64 timestamp
     );
 
@@ -39,6 +40,7 @@ contract IDOClaimUpgradeable is
     string private constant _SIGNING_DOMAIN = "IDO-Claim-Voucher";
     string private constant _SIGNATURE_VERSION = "1";
 
+    mapping(address => mapping(uint256 => bool)) private _monthsMap;
     mapping(string => bool) private _noncesMap;
 
     address public operator;
@@ -55,10 +57,13 @@ contract IDOClaimUpgradeable is
         _;
     }
 
-    modifier checkNonce(string[] calldata nonceArray) {
-        for(uint256 i=0;i< nonceArray.length; i++){
-            require(!_noncesMap[nonceArray[i]], "The nonce has been used");
+    modifier checkMonthAndNonce(uint256[] calldata month, string calldata nonce) {
+        for(uint256 i=0;i< month.length;i++){
+            require(!_monthsMap[_msgSender()][month[i]],"Month already withdraw");
+            _monthsMap[_msgSender()][month[i]] = true;
         }
+        require(!_noncesMap[nonce], "nonce already used");
+
         _;
     }
 
@@ -80,16 +85,26 @@ contract IDOClaimUpgradeable is
     function claimIDO(ClaimStruct calldata claimStruct)
         public
         whenNotPaused
-        checkNonce(claimStruct.nonceArray)
         nonReentrant
+        checkMonthAndNonce(claimStruct.month,claimStruct.nonce)
     {
-        address signer = _verifyClaim(claimStruct)
-        require(operator == signer,"Signature invalid or unauthorized");
-        require(amount > 0, "Amount must be greater than zero");
-        require(IERC20Upgradeable(claimStruct.tokenAddress).balanceOf(address(this))>= claimStruct.amount, "Not enough token");
+        address signer = _verifyClaim(claimStruct);
+        require(operator == signer, "Signature invalid or unauthorized");
+        require(_msgSender() == claimStruct.receiver, "Wrong caller");
+        require(claimStruct.amount > 0, "Amount must be greater than zero");
+        require(
+            IERC20Upgradeable(claimStruct.tokenAddress).balanceOf(
+                address(this)
+            ) >= claimStruct.amount,
+            "Not enough token"
+        );
 
-        IERC20Upgradeable(claimStruct.tokenAddress).transferFrom(
-            address(this),
+        _noncesMap[claimStruct.nonce] = true;
+        for(uint256 i=0;i< claimStruct.month.length;i++){
+            _monthsMap[_msgSender()][claimStruct.month[i]] = true;
+        }
+
+        IERC20Upgradeable(claimStruct.tokenAddress).transfer(
             claimStruct.receiver,
             claimStruct.amount
         );
@@ -98,7 +113,8 @@ contract IDOClaimUpgradeable is
             claimStruct.receiver,
             claimStruct.tokenAddress,
             claimStruct.amount,
-            claimStruct.nonceArray,
+            claimStruct.month,
+            claimStruct.nonce,
             uint64(block.timestamp)
         );
     }
@@ -108,7 +124,7 @@ contract IDOClaimUpgradeable is
         view
         returns (address)
     {
-        bytes32 digest = _hashClaim(data);
+        bytes32 digest = _hashClaim(claimStruct);
         return ECDSAUpgradeable.recover(digest, claimStruct.signature);
     }
 
@@ -122,12 +138,13 @@ contract IDOClaimUpgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ClaimStruct(uint256 amount,address receiver,address tokenAddress,string[] nonceArray)"
+                            "ClaimStruct(uint256 amount,uint256[] month,address receiver,address tokenAddress,string nonce)"
                         ),
                         claimStruct.amount,
+                        keccak256(abi.encodePacked(claimStruct.month)),
                         claimStruct.receiver,
                         claimStruct.tokenAddress,
-                        keccak256(abi.encodePacked(claimStruct.nonceArray))
+                        keccak256(bytes(claimStruct.nonce))
                     )
                 )
             );
@@ -149,5 +166,11 @@ contract IDOClaimUpgradeable is
     function setUnpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(_msgSender());
+    }
+
+    function withdrawToken(address _token) external onlyOwner {
+        uint256 balance = IERC20Upgradeable(_token).balanceOf(address(this));
+        require(balance > 0, "Invalid amount");
+        IERC20Upgradeable(_token).transfer(_msgSender(), balance);
     }
 }

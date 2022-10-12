@@ -16,10 +16,19 @@ contract IDOBuyUpgradeable is
 {
     using StringsUpgradeable for uint256;
 
+    struct BuyStruct {
+        uint256 amount;
+        address receiver;
+        address tokenAddress;
+        string nonce;
+        bytes signature;
+    }
+
     event BuyIDOEvent(
         address indexed user,
         address tokenAddress,
         uint256 amount,
+        string nonce,
         uint64 timestamp
     );
 
@@ -60,24 +69,59 @@ contract IDOBuyUpgradeable is
 
     function __PublicSale_init_unchained() internal initializer {
         fundReceiver = _msgSender();
+        operator = _msgSender();
     }
 
-    function buyIDO(uint256 amount, address tokenAddress)
+    function _verifyBuy(BuyStruct calldata buyStruct)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashBuy(buyStruct);
+        return ECDSAUpgradeable.recover(digest, buyStruct.signature);
+    }
+
+    function _hashBuy(BuyStruct calldata buyStruct)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "BuyStruct(uint256 amount,address receiver,address tokenAddress,string nonce)"
+                        ),
+                        buyStruct.amount,
+                        _msgSender(),
+                        buyStruct.tokenAddress,
+                        keccak256(bytes(buyStruct.nonce))
+                    )
+                )
+            );
+    }
+
+    function buyIDO(BuyStruct calldata buyStruct)
         public
         whenNotPaused
     {
-        require(amount > 0, "Amount must be greater than zero");
+        address signer = _verifyBuy(buyStruct);
+        require(signer == operator,"Signature invalid or unauthorized");
+        require(buyStruct.amount > 0, "Amount must be greater than zero");
+        require(!_noncesMap[buyStruct.nonce],"nonce already used");
 
-        IERC20Upgradeable(tokenAddress).transferFrom(
+        IERC20Upgradeable(buyStruct.tokenAddress).transferFrom(
             _msgSender(),
             fundReceiver,
-            amount
+            buyStruct.amount
         );
 
         emit BuyIDOEvent(
             _msgSender(),
-            tokenAddress,
-            amount,
+            buyStruct.tokenAddress,
+            buyStruct.amount,
+            buyStruct.nonce,
             uint64(block.timestamp)
         );
     }
