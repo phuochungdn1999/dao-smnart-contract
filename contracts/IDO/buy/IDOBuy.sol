@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgra
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
 
 contract IDOBuyUpgradeable is
@@ -15,6 +16,7 @@ contract IDOBuyUpgradeable is
     ReentrancyGuardUpgradeable
 {
     using StringsUpgradeable for uint256;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct BuyStruct {
         uint256 amount;
@@ -111,7 +113,7 @@ contract IDOBuyUpgradeable is
         require(buyStruct.amount > 0, "Amount must be greater than zero");
         require(!_noncesMap[buyStruct.nonce],"nonce already used");
 
-        IERC20Upgradeable(buyStruct.tokenAddress).transferFrom(
+        IERC20Upgradeable(buyStruct.tokenAddress).safeTransferFrom(
             _msgSender(),
             fundReceiver,
             buyStruct.amount
