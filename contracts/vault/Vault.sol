@@ -9,14 +9,17 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
-contract MarketplaceV3Upgradeable is
+contract VaultUpgradeable is
     OwnableUpgradeable,
     EIP712Upgradeable,
     ReentrancyGuardUpgradeable
 {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    struct ChargeFeeStruct {
+    struct ChargeTransferFeeStruct {
         address walletAddress;
         string id;
         uint256 tokenId;
@@ -27,7 +30,40 @@ contract MarketplaceV3Upgradeable is
         bytes signature;
     }
 
-    event ChargeEvent(
+    struct TransferNFTStruct {
+        string id;
+        uint256 tokenId;
+        uint256 price;
+        address from;
+        address to;
+        address tokenAddress;
+        address nftAddress;
+        string nonce;
+        bytes signature;
+    }
+
+     struct CancelTransferNFTStruct {
+        string id;
+        uint256 tokenId;
+        address owner;
+        address nftAddress;
+        string nonce;
+        bytes signature;
+    }
+
+    struct ClaimNFTStruct {
+        string id;
+        uint256 tokenId;
+        uint256 price;
+        address from;
+        address to;
+        address tokenAddress;
+        address nftAddress;
+        string nonce;
+        bytes signature;
+    }
+
+    event ChargeFeeEvent(
         address user,
         string id,
         uint256 tokenId,
@@ -35,6 +71,36 @@ contract MarketplaceV3Upgradeable is
         address tokenAddress,
         address itemAddress,
         uint64 timestamp
+    );
+
+    event TransferNFTEvent(
+        string indexed id,
+        uint256 tokenId,
+        uint256 price,
+        address from,
+        address to,
+        address tokenAddress,
+        address nftAddress,
+        string nonce
+    );
+
+    event CancelTransferNFTEvent(
+        string indexed id,
+        uint256 tokenId,
+        address owner,
+        address nftAddress,
+        string nonce
+    );
+
+    event ClaimNFTEvent(
+        string indexed id,
+        uint256 tokenId,
+        uint256 price,
+        address from,
+        address to,
+        address tokenAddress,
+        address nftAddress,
+        string nonce
     );
 
     event Paused(address account);
@@ -49,6 +115,9 @@ contract MarketplaceV3Upgradeable is
     bool private _paused;
 
     mapping(string => bool) private _noncesMap;
+    mapping(uint256 => address) public senderMap;
+    mapping(uint256 => address) public receiverMap;
+
 
     modifier whenPaused() {
         require(paused(), "Pausable: not paused");
@@ -79,7 +148,7 @@ contract MarketplaceV3Upgradeable is
         feesCollectorAddress = data;
     }
 
-    function chagreFee(ChargeFeeStruct calldata data)
+    function chargeFeeTransfer(ChargeTransferFeeStruct calldata data)
         public
         payable
         nonReentrant
@@ -115,7 +184,7 @@ contract MarketplaceV3Upgradeable is
             );
         }
 
-        emit ChargeEvent(
+        emit ChargeFeeEvent(
             _msgSender(),
             data.id,
             data.tokenId,
@@ -126,7 +195,7 @@ contract MarketplaceV3Upgradeable is
         );
     }
 
-    function _verifyChargeFee(ChargeFeeStruct calldata data)
+    function _verifyChargeFee(ChargeTransferFeeStruct calldata data)
         internal
         view
         returns (address)
@@ -135,7 +204,7 @@ contract MarketplaceV3Upgradeable is
         return ECDSAUpgradeable.recover(digest, data.signature);
     }
 
-    function _hashChargeFee(ChargeFeeStruct calldata data)
+    function _hashChargeFee(ChargeTransferFeeStruct calldata data)
         internal
         view
         returns (bytes32)
@@ -145,7 +214,7 @@ contract MarketplaceV3Upgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ChargeFeeStruct(address walletAddress,string id,uint256 tokenId,uint256 price,address tokenAddress,address itemAddress, string nonce)"
+                            "ChargeTransferFeeStruct(address walletAddress,string id,uint256 tokenId,uint256 price,address tokenAddress,address itemAddress,string nonce)"
                         ),
                         _msgSender(),
                         keccak256(bytes(data.id)),
@@ -158,6 +227,241 @@ contract MarketplaceV3Upgradeable is
                 )
             );
     }
+
+    function chargeFeeTransferNFT(TransferNFTStruct calldata data)
+        public
+        payable
+        nonReentrant
+        whenNotPaused
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyTransferFee(data);
+        // Make sure that the signer is authorized to charge item
+        require(signer == operator, "Signature invalid or unauthorized");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        require(senderMap[data.tokenId] == address(0),"Already to claim");
+        require(data.from != address(0),"Null sender");
+        require(data.to != address(0),"Null receiver");
+        require(data.nftAddress != address(0),"Invalid NFT");
+
+        _noncesMap[data.nonce] = true;
+
+        uint256 price = data.price;
+        if (data.tokenAddress == address(0)) {
+            require(msg.value >= data.price, "Not enough money");
+            (bool success, ) = feesCollectorAddress.call{value: msg.value}("");
+            require(success, "Transfer payment failed");
+        } else {
+            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
+                msg.sender,
+                feesCollectorAddress,
+                data.price
+            );
+        }
+        IERC721Upgradeable(data.nftAddress).safeTransferFrom(data.from,address(this),data.tokenId, "");
+
+        senderMap[data.tokenId] = data.from;
+        receiverMap[data.tokenId] = data.to;
+
+        emit TransferNFTEvent(
+            data.id,
+            data.tokenId,
+            data.price,
+            data.from,
+            data.to,
+            data.tokenAddress,
+            data.nftAddress,
+            data.nonce
+        );
+    }
+
+    function _verifyTransferFee(TransferNFTStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashTransferFee(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashTransferFee(TransferNFTStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "TransferNFTStruct(string id,uint256 tokenId,uint256 price,address from,address to,address tokenAddress,address nftAddress,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        data.tokenId,
+                        data.price,
+                        data.from,
+                        data.to,
+                        data.tokenAddress,
+                        data.nftAddress,
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
+    function cancelTransferNFT(CancelTransferNFTStruct calldata data)
+        public
+        payable
+        nonReentrant
+        whenNotPaused
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyCancelTranfer(data);
+
+        // Make sure that the signer is authorized to charge item
+        require(signer == operator, "Signature invalid or unauthorized");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        require(data.owner != address(0), "Null owner");
+        require(senderMap[data.tokenId] == data.owner, "Invalid owner");
+        require(_msgSender() == data.owner,"Invalid caller");
+        require(data.nftAddress != address(0), "Invalid NFT");
+        require(IERC721Upgradeable(data.nftAddress).ownerOf(data.tokenId) == address(this),"Invalid tokenId");
+
+        _noncesMap[data.nonce] = true;
+        senderMap[data.tokenId] = address(0);
+        receiverMap[data.tokenId] = address(0);
+
+        IERC721Upgradeable(data.nftAddress).safeTransferFrom(address(this),data.owner,data.tokenId, "");
+
+        emit CancelTransferNFTEvent(
+            data.id,
+            data.tokenId,
+            data.owner,
+            data.nftAddress,
+            data.nonce
+        );
+    }
+
+    function _verifyCancelTranfer(CancelTransferNFTStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashCancelTransfer(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashCancelTransfer(CancelTransferNFTStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "CancelTransferNFTStruct(string id,uint256 tokenId,address owner,address nftAddress,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        data.tokenId,
+                        data.owner,
+                        data.nftAddress,
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
+    function chargeFeeClaimNFT(ClaimNFTStruct calldata data)
+        public
+        payable
+        nonReentrant
+        whenNotPaused
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyClaimNFT(data);
+        // Make sure that the signer is authorized to charge item
+        require(signer == operator, "Signature invalid or unauthorized");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        require(data.nftAddress != address(0), "Invalid NFT");
+        require(data.to != address(0), "Invalid receiver");
+        require(data.from != address(0), "Invalid sender");
+        require(data.nftAddress != address(0), "Invalid NFT address");
+        require(IERC721Upgradeable(data.nftAddress).ownerOf(data.tokenId) == address(this),"Invalid tokenId");
+        require(receiverMap[data.tokenId] == data.to,"Invalid receiver");
+        require(_msgSender() == data.to,"Invalid caller");
+
+        _noncesMap[data.nonce] = true;
+
+        if (data.tokenAddress == address(0)) {
+            require(msg.value >= data.price, "Not enough money");
+            (bool success, ) = feesCollectorAddress.call{value: msg.value}("");
+            require(success, "Transfer payment failed");
+        } else {
+            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
+                msg.sender,
+                feesCollectorAddress,
+                data.price
+            );
+        }
+        senderMap[data.tokenId] = address(0);
+        receiverMap[data.tokenId] = address(0);
+
+        IERC721Upgradeable(data.nftAddress).safeTransferFrom(address(this),data.to,data.tokenId);
+
+        emit ClaimNFTEvent(
+            data.id,
+            data.tokenId,
+            data.price,
+            data.from,
+            data.to,
+            data.tokenAddress,
+            data.nftAddress,
+            data.nonce
+        );
+    }
+
+    function _verifyClaimNFT(ClaimNFTStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashClaimNFT(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashClaimNFT(ClaimNFTStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "ClaimNFTStruct(string id,uint256 tokenId,uint256 price,address from,address to,address tokenAddress,address nftAddress,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        data.tokenId,
+                        data.price,
+                        data.from,
+                        data.to,
+                        data.tokenAddress,
+                        data.nftAddress,
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
 
     function setOperator(address _operator) external onlyOwner {
         operator = _operator;
@@ -175,5 +479,14 @@ contract MarketplaceV3Upgradeable is
     function setUnpause()onlyOwner external whenPaused {
         _paused = false;
         emit Unpaused(_msgSender());
+    }
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }

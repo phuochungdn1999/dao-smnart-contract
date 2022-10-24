@@ -388,4 +388,13 @@ contract MarketplaceV3Upgradeable is
         _paused = false;
         emit Unpaused(_msgSender());
     }
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
 }
