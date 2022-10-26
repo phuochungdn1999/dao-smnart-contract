@@ -34,6 +34,7 @@ contract VaultUpgradeable is
         string id;
         uint256 tokenId;
         uint256 price;
+        uint256 fee;
         address from;
         address to;
         address tokenAddress;
@@ -55,6 +56,7 @@ contract VaultUpgradeable is
         string id;
         uint256 tokenId;
         uint256 price;
+        uint256 fee;
         address from;
         address to;
         address tokenAddress;
@@ -77,6 +79,7 @@ contract VaultUpgradeable is
         string indexed id,
         uint256 tokenId,
         uint256 price,
+        uint256 fee,
         address from,
         address to,
         address tokenAddress,
@@ -96,6 +99,7 @@ contract VaultUpgradeable is
         string indexed id,
         uint256 tokenId,
         uint256 price,
+        uint256 fee,
         address from,
         address to,
         address tokenAddress,
@@ -245,21 +249,10 @@ contract VaultUpgradeable is
         require(data.from != address(0),"Null sender");
         require(data.to != address(0),"Null receiver");
         require(data.nftAddress != address(0),"Invalid NFT");
+        require(data.fee <= data.price,"Invalid fee");
 
         _noncesMap[data.nonce] = true;
 
-        uint256 price = data.price;
-        if (data.tokenAddress == address(0)) {
-            require(msg.value >= data.price, "Not enough money");
-            (bool success, ) = feesCollectorAddress.call{value: msg.value}("");
-            require(success, "Transfer payment failed");
-        } else {
-            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
-                msg.sender,
-                feesCollectorAddress,
-                data.price
-            );
-        }
         IERC721Upgradeable(data.nftAddress).safeTransferFrom(data.from,address(this),data.tokenId, "");
 
         senderMap[data.tokenId] = data.from;
@@ -269,6 +262,7 @@ contract VaultUpgradeable is
             data.id,
             data.tokenId,
             data.price,
+            data.fee,
             data.from,
             data.to,
             data.tokenAddress,
@@ -296,11 +290,12 @@ contract VaultUpgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "TransferNFTStruct(string id,uint256 tokenId,uint256 price,address from,address to,address tokenAddress,address nftAddress,string nonce)"
+                            "TransferNFTStruct(string id,uint256 tokenId,uint256 price,uint256 fee,address from,address to,address tokenAddress,address nftAddress,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         data.tokenId,
                         data.price,
+                        data.fee,
                         data.from,
                         data.to,
                         data.tokenAddress,
@@ -397,18 +392,30 @@ contract VaultUpgradeable is
         require(IERC721Upgradeable(data.nftAddress).ownerOf(data.tokenId) == address(this),"Invalid tokenId");
         require(receiverMap[data.tokenId] == data.to,"Invalid receiver");
         require(_msgSender() == data.to,"Invalid caller");
+        require(data.fee <= data.price,"Invalid fee");
 
         _noncesMap[data.nonce] = true;
 
+        uint256 price = data.price - data.fee;
+        uint256 fee = data.fee;
+
         if (data.tokenAddress == address(0)) {
             require(msg.value >= data.price, "Not enough money");
-            (bool success, ) = feesCollectorAddress.call{value: msg.value}("");
-            require(success, "Transfer payment failed");
+            (bool successFee, ) = feesCollectorAddress.call{value: fee}("");
+            (bool successPrice, ) = data.from.call{value: price}("");
+
+            require(successFee, "Transfer fee payment failed");
+            require(successPrice, "Transfer price payment failed");
         } else {
             IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
                 msg.sender,
                 feesCollectorAddress,
-                data.price
+                fee
+            );
+            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
+                msg.sender,
+                data.from,
+                price
             );
         }
         senderMap[data.tokenId] = address(0);
@@ -420,6 +427,7 @@ contract VaultUpgradeable is
             data.id,
             data.tokenId,
             data.price,
+            data.fee,
             data.from,
             data.to,
             data.tokenAddress,
