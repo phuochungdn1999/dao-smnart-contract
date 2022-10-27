@@ -455,11 +455,12 @@ contract VaultUpgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ClaimNFTStruct(string id,uint256 tokenId,uint256 price,address from,address to,address tokenAddress,address nftAddress,string nonce)"
+                            "ClaimNFTStruct(string id,uint256 tokenId,uint256 price,uint256 fee,address from,address to,address tokenAddress,address nftAddress,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         data.tokenId,
                         data.price,
+                        data.fee,
                         data.from,
                         data.to,
                         data.tokenAddress,

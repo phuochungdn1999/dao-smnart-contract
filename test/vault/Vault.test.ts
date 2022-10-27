@@ -27,7 +27,93 @@ describe("Vault", () => {
     await NFTContract.connect(deployer).setOperator(deployer.address);
     await vaultContract.connect(deployer).setOperator(deployer.address);
   });
+  describe("Charge fee", async () => {
+    it("Charge Transfer NFT", async () => {
+      // Mint box
 
+      const nonce = uuidv4();
+      const auth = {
+        signer: deployer,
+        contract: NFTContract.address,
+      };
+      const types = {
+        ItemVoucherStruct: [
+          { name: "id", type: "string" },
+          { name: "itemType", type: "string" },
+          { name: "extraType", type: "string" },
+          { name: "price", type: "uint256" },
+          { name: "tokenAddress", type: "address" },
+          { name: "receiver", type: "address" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+      const voucher = {
+        id: "123123",
+        itemType: "box",
+        extraType: "",
+        price: ethers.utils.parseEther("1"),
+        tokenAddress: "0x0000000000000000000000000000000000000000",
+        receiver: deployer.address,
+        nonce: nonce,
+      };
+      const signature = await createVoucher(types, auth, voucher);
+      // console.log("signature: ",signature)
+      const tx = await NFTContract.connect(deployer).redeem(signature, {
+        value: ethers.utils.parseEther("1"),
+      });
+
+      await tx.wait();
+
+      expect(
+        await await NFTContract.connect(deployer).balanceOf(deployer.address)
+      ).to.equal(1);
+      const txApprove = await NFTContract.connect(deployer).approve(
+        vaultContract.address,
+        1
+      );
+      await txApprove.wait();
+
+      const nonceVault = uuidv4();
+      const authVault = {
+        signer: deployer,
+        contract: vaultContract.address,
+      };
+      const typesVault = {
+        ChargeTransferFeeStruct: [
+          { name: "walletAddress", type: "address" },
+          { name: "id", type: "string" },
+          { name: "tokenId", type: "uint256" },
+          { name: "price", type: "uint256" },
+          { name: "tokenAddress", type: "address" },
+          { name: "itemAddress", type: "address" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+      const voucherVault = {
+        walletAddress: deployer.address,
+        id: "123123",
+        tokenId: "1",
+        price: ethers.utils.parseEther("1"),
+        tokenAddress: "0x0000000000000000000000000000000000000000",
+        itemAddress: NFTContract.address,
+        nonce: nonceVault,
+      };
+
+      const signatureVault = await createVoucher(
+        typesVault,
+        authVault,
+        voucherVault,
+        "Vault-Item",
+        "1"
+      );
+      const txVault = await vaultContract
+        .connect(deployer)
+        .chargeFeeTransfer(signatureVault, {
+          value: ethers.utils.parseEther("1"),
+        });
+      await txVault.wait();
+    });
+  });
   describe("Transfer, Cancel and Claim", async () => {
     it("Transfer and Cancel NFT to vault", async () => {
       // Mint box
@@ -84,6 +170,7 @@ describe("Vault", () => {
           { name: "id", type: "string" },
           { name: "tokenId", type: "uint256" },
           { name: "price", type: "uint256" },
+          { name: "fee", type: "uint256" },
           { name: "from", type: "address" },
           { name: "to", type: "address" },
           { name: "tokenAddress", type: "address" },
@@ -95,6 +182,7 @@ describe("Vault", () => {
         id: "123123",
         tokenId: "1",
         price: ethers.utils.parseEther("1"),
+        fee: ethers.utils.parseEther("1"),
         from: deployer.address,
         to: user.address,
         tokenAddress: "0x0000000000000000000000000000000000000000",
@@ -215,6 +303,7 @@ describe("Vault", () => {
           { name: "id", type: "string" },
           { name: "tokenId", type: "uint256" },
           { name: "price", type: "uint256" },
+          { name: "fee", type: "uint256" },
           { name: "from", type: "address" },
           { name: "to", type: "address" },
           { name: "tokenAddress", type: "address" },
@@ -226,6 +315,7 @@ describe("Vault", () => {
         id: "123123",
         tokenId: "1",
         price: ethers.utils.parseEther("1"),
+        fee: ethers.utils.parseEther("1"),
         from: deployer.address,
         to: user.address,
         tokenAddress: "0x0000000000000000000000000000000000000000",
@@ -263,6 +353,7 @@ describe("Vault", () => {
           { name: "id", type: "string" },
           { name: "tokenId", type: "uint256" },
           { name: "price", type: "uint256" },
+          { name: "fee", type: "uint256" },
           { name: "from", type: "address" },
           { name: "to", type: "address" },
           { name: "tokenAddress", type: "address" },
@@ -274,6 +365,7 @@ describe("Vault", () => {
         id: "123123",
         tokenId: "1",
         price: ethers.utils.parseEther("1"),
+        fee: ethers.utils.parseEther("1"),
         from: deployer.address,
         to: user.address,
         tokenAddress: "0x0000000000000000000000000000000000000000",
