@@ -13,7 +13,6 @@ contract RUNGEMUpgradeable is
     OwnableUpgradeable,
     PausableUpgradeable
 {
-    uint256 public constant CAP = 1_000_000_000 * 10**18;
     address public constant BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
     uint256 public burnAmount;
@@ -39,11 +38,5 @@ contract RUNGEMUpgradeable is
 
     function setBurnAmount(uint256 amount) external onlyOwner {
         burnAmount = amount;
-    }
-
-    function mintBurnToken(address to) external onlyOwner {
-        require(totalSupply() + burnAmount <= CAP, "RUNGEM: Exceed cap"); // Address is zero
-        _mint(to, burnAmount);
-        burnAmount = 0;
     }
 }
