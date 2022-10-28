@@ -23,7 +23,7 @@ contract RUNGEMUpgradeable is
     }
 
     function __RUNGEM_init() internal initializer {
-        __ERC20_init("GENI", "GENI");
+        __ERC20_init("RUNGEM", "RUNGEM");
         __Ownable_init();
         __Pausable_init();
         __RUNGEM_init_unchained();
