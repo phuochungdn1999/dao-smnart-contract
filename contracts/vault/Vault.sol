@@ -43,7 +43,7 @@ contract VaultUpgradeable is
         bytes signature;
     }
 
-     struct CancelTransferNFTStruct {
+    struct CancelTransferNFTStruct {
         string id;
         uint256 tokenId;
         address owner;
@@ -122,7 +122,6 @@ contract VaultUpgradeable is
     mapping(uint256 => address) public senderMap;
     mapping(uint256 => address) public receiverMap;
 
-
     modifier whenPaused() {
         require(paused(), "Pausable: not paused");
         _;
@@ -146,6 +145,7 @@ contract VaultUpgradeable is
 
     function __Vault_init_unchained() internal initializer {
         feesCollectorAddress = _msgSender();
+        operator = _msgSender();
     }
 
     function setFeesCollectorAddress(address data) external onlyOwner {
@@ -167,25 +167,25 @@ contract VaultUpgradeable is
         require(!_noncesMap[data.nonce], "The nonce has been used");
         _noncesMap[data.nonce] = true;
 
-            uint256 price = data.price;
-        if (data.tokenAddress == address(0)) {
-            require(
-                msg.value == price && price > 0,
-                "Not same price or cant be 0"
-            );
+        uint256 price = data.price;
+        if (data.price != 0) {
+            if (data.tokenAddress == address(0)) {
+                require(
+                    msg.value == price && price > 0,
+                    "Not same price or cant be 0"
+                );
 
-                (bool success, ) = feesCollectorAddress.call{
-                    value: price
-                }("");
+                (bool success, ) = feesCollectorAddress.call{value: price}("");
                 require(success, "Transfer fee failed");
-        } else {
-            require(price > 0, "Price cant be 0");
-            // transfer with token
-            IERC20Upgradeable(data.tokenAddress).transferFrom(
-                _msgSender(),
-                feesCollectorAddress,
-                price
-            );
+            } else {
+                require(price > 0, "Price cant be 0");
+                // transfer with token
+                IERC20Upgradeable(data.tokenAddress).transferFrom(
+                    _msgSender(),
+                    feesCollectorAddress,
+                    price
+                );
+            }
         }
 
         emit ChargeFeeEvent(
@@ -245,15 +245,20 @@ contract VaultUpgradeable is
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
-        require(senderMap[data.tokenId] == address(0),"Already to claim");
-        require(data.from != address(0),"Null sender");
-        require(data.to != address(0),"Null receiver");
-        require(data.nftAddress != address(0),"Invalid NFT");
-        require(data.fee <= data.price,"Invalid fee");
+        require(senderMap[data.tokenId] == address(0), "Already to claim");
+        require(data.from != address(0), "Null sender");
+        require(data.to != address(0), "Null receiver");
+        require(data.nftAddress != address(0), "Invalid NFT");
+        require(data.fee <= data.price, "Invalid fee");
 
         _noncesMap[data.nonce] = true;
 
-        IERC721Upgradeable(data.nftAddress).safeTransferFrom(data.from,address(this),data.tokenId, "");
+        IERC721Upgradeable(data.nftAddress).safeTransferFrom(
+            data.from,
+            address(this),
+            data.tokenId,
+            ""
+        );
 
         senderMap[data.tokenId] = data.from;
         receiverMap[data.tokenId] = data.to;
@@ -322,15 +327,24 @@ contract VaultUpgradeable is
         require(!_noncesMap[data.nonce], "The nonce has been used");
         require(data.owner != address(0), "Null owner");
         require(senderMap[data.tokenId] == data.owner, "Invalid owner");
-        require(_msgSender() == data.owner,"Invalid caller");
+        require(_msgSender() == data.owner, "Invalid caller");
         require(data.nftAddress != address(0), "Invalid NFT");
-        require(IERC721Upgradeable(data.nftAddress).ownerOf(data.tokenId) == address(this),"Invalid tokenId");
+        require(
+            IERC721Upgradeable(data.nftAddress).ownerOf(data.tokenId) ==
+                address(this),
+            "Invalid tokenId"
+        );
 
         _noncesMap[data.nonce] = true;
         senderMap[data.tokenId] = address(0);
         receiverMap[data.tokenId] = address(0);
 
-        IERC721Upgradeable(data.nftAddress).safeTransferFrom(address(this),data.owner,data.tokenId, "");
+        IERC721Upgradeable(data.nftAddress).safeTransferFrom(
+            address(this),
+            data.owner,
+            data.tokenId,
+            ""
+        );
 
         emit CancelTransferNFTEvent(
             data.id,
@@ -389,10 +403,14 @@ contract VaultUpgradeable is
         require(data.to != address(0), "Invalid receiver");
         require(data.from != address(0), "Invalid sender");
         require(data.nftAddress != address(0), "Invalid NFT address");
-        require(IERC721Upgradeable(data.nftAddress).ownerOf(data.tokenId) == address(this),"Invalid tokenId");
-        require(receiverMap[data.tokenId] == data.to,"Invalid receiver");
-        require(_msgSender() == data.to,"Invalid caller");
-        require(data.fee <= data.price,"Invalid fee");
+        require(
+            IERC721Upgradeable(data.nftAddress).ownerOf(data.tokenId) ==
+                address(this),
+            "Invalid tokenId"
+        );
+        require(receiverMap[data.tokenId] == data.to, "Invalid receiver");
+        require(_msgSender() == data.to, "Invalid caller");
+        require(data.fee <= data.price, "Invalid fee");
 
         _noncesMap[data.nonce] = true;
 
@@ -421,7 +439,11 @@ contract VaultUpgradeable is
         senderMap[data.tokenId] = address(0);
         receiverMap[data.tokenId] = address(0);
 
-        IERC721Upgradeable(data.nftAddress).safeTransferFrom(address(this),data.to,data.tokenId);
+        IERC721Upgradeable(data.nftAddress).safeTransferFrom(
+            address(this),
+            data.to,
+            data.tokenId
+        );
 
         emit ClaimNFTEvent(
             data.id,
@@ -471,7 +493,6 @@ contract VaultUpgradeable is
             );
     }
 
-
     function setOperator(address _operator) external onlyOwner {
         operator = _operator;
     }
@@ -480,12 +501,12 @@ contract VaultUpgradeable is
         return _paused;
     }
 
-    function setPause() onlyOwner external whenNotPaused {
+    function setPause() external onlyOwner whenNotPaused {
         _paused = true;
         emit Paused(_msgSender());
     }
 
-    function setUnpause()onlyOwner external whenPaused {
+    function setUnpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(_msgSender());
     }

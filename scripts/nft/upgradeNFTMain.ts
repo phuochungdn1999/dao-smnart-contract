@@ -6,5 +6,5 @@ const upgradeNFTUpgradeableMain = async (baseAddress: string, version: string = 
 };
 
 // upgradeNFTUpgradeableMain('0xD50209E7b6B01646D5bd987476Ac6A8B0f57da66'); // mainnet
-upgradeNFTUpgradeableMain('0xf8876dBac378b3FB5305CbE78C5Ce954E57CE7f3'); // testnet
+upgradeNFTUpgradeableMain('0xD2940D697Eb9Cd749Fef8B10FC9311FEE280C36E'); // testnet
 

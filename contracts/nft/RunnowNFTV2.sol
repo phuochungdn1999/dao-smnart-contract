@@ -31,6 +31,7 @@ contract RunnowNFTUpgradeableV2 is
         string itemType;
         string extraType;
         uint256 price;
+        uint256 amount;
         address tokenAddress;
         address receiver;
         string nonce;
@@ -198,6 +199,7 @@ contract RunnowNFTUpgradeableV2 is
         // Make sure that the signer is authorized to mint an item
         require(signer == operator, "Signature invalid or unauthorized");
         require(_msgSender() == data.receiver, "Wrong calller and receiver");
+        require(data.amount > 0, "Amount greater than 0");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
@@ -217,20 +219,21 @@ contract RunnowNFTUpgradeableV2 is
         }
 
         // Mint
-        _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
-        _mint(_msgSender(), newTokenId);
-
-        emit RedeemEvent(
-            _msgSender(),
-            data.id,
-            data.itemType,
-            data.extraType,
-            newTokenId,
-            data.nonce,
-            data.tokenAddress,
-            uint64(block.timestamp)
-        );
+        for (uint256 i = 0; i < data.amount; i++) {
+            _tokenIds.increment();
+            uint256 newTokenId = _tokenIds.current();
+            _mint(_msgSender(), newTokenId);
+            emit RedeemEvent(
+                _msgSender(),
+                data.id,
+                data.itemType,
+                data.extraType,
+                newTokenId,
+                data.nonce,
+                data.tokenAddress,
+                uint64(block.timestamp)
+            );
+        }
     }
 
     function _verifyItemVoucher(ItemVoucherStruct calldata data)
@@ -252,12 +255,13 @@ contract RunnowNFTUpgradeableV2 is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,address tokenAddress,address receiver,string nonce)"
+                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,uint256 amount,address tokenAddress,address receiver,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
                         keccak256(bytes(data.extraType)),
                         data.price,
+                        data.amount,
                         data.tokenAddress,
                         data.receiver,
                         keccak256(bytes(data.nonce))
@@ -601,7 +605,7 @@ contract RunnowNFTUpgradeableV2 is
                 data.price
             );
         }
-        this.safeTransferFrom(data.from,data.to,data.tokenId, "");
+        this.safeTransferFrom(data.from, data.to, data.tokenId, "");
 
         // Mint
         // ERC.safeTransferFrom(data.from,data.to, data.id);

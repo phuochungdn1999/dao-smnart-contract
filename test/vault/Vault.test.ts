@@ -1,10 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import { Contract } from "ethers";
 import { ethers } from "hardhat";
 import { v4 as uuidv4 } from "uuid";
 import deployBlacklistUpgradeable from "../../scripts/blacklist/deployBlacklist";
-import deployRUNNOWUpgradeable from "../../scripts/coin/deployRUNNOW";
 import deployNFTUpgradeable from "../../scripts/nft/deployNFT";
 import deployVaultUpgradeable from "../../scripts/vault/deployVault";
 import { createVoucher } from "../../utils/hashVoucher";
@@ -42,6 +41,7 @@ describe("Vault", () => {
           { name: "itemType", type: "string" },
           { name: "extraType", type: "string" },
           { name: "price", type: "uint256" },
+          { name: "amount", type: "uint256" },
           { name: "tokenAddress", type: "address" },
           { name: "receiver", type: "address" },
           { name: "nonce", type: "string" },
@@ -52,6 +52,7 @@ describe("Vault", () => {
         itemType: "box",
         extraType: "",
         price: ethers.utils.parseEther("1"),
+        amount: 1,
         tokenAddress: "0x0000000000000000000000000000000000000000",
         receiver: deployer.address,
         nonce: nonce,
@@ -129,6 +130,7 @@ describe("Vault", () => {
           { name: "itemType", type: "string" },
           { name: "extraType", type: "string" },
           { name: "price", type: "uint256" },
+          { name: "amount", type: "uint256" },
           { name: "tokenAddress", type: "address" },
           { name: "receiver", type: "address" },
           { name: "nonce", type: "string" },
@@ -139,6 +141,7 @@ describe("Vault", () => {
         itemType: "box",
         extraType: "",
         price: ethers.utils.parseEther("1"),
+        amount: 1,
         tokenAddress: "0x0000000000000000000000000000000000000000",
         receiver: deployer.address,
         nonce: nonce,
@@ -262,6 +265,7 @@ describe("Vault", () => {
           { name: "itemType", type: "string" },
           { name: "extraType", type: "string" },
           { name: "price", type: "uint256" },
+          { name: "amount", type: "uint256" },
           { name: "tokenAddress", type: "address" },
           { name: "receiver", type: "address" },
           { name: "nonce", type: "string" },
@@ -272,6 +276,7 @@ describe("Vault", () => {
         itemType: "box",
         extraType: "",
         price: ethers.utils.parseEther("1"),
+        amount: 1,
         tokenAddress: "0x0000000000000000000000000000000000000000",
         receiver: deployer.address,
         nonce: nonce,

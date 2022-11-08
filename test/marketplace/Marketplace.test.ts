@@ -3,12 +3,12 @@ import { assert, expect } from "chai";
 import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 import { v4 as uuidv4 } from "uuid";
+import deployBlacklistUpgradeable from "../../scripts/blacklist/deployBlacklist";
+import deployRUNGEMUpgradeable from "../../scripts/coin/deployRUNGEM";
 import deployMarketplaceUpgradeable from "../../scripts/marketplace/deployMarketplace";
 import deployNFTUpgradeable from "../../scripts/nft/deployNFT";
-import deployRUNGEMUpgradeable from "../../scripts/coin/deployRUNGEM";
 import { hashOrderItem } from "../../utils/hashMarketplaceItem";
 import { createVoucher } from "../../utils/hashVoucher";
-import deployBlacklistUpgradeable from "../../scripts/blacklist/deployBlacklist";
 
 const provider = ethers.getDefaultProvider();
 
@@ -70,6 +70,7 @@ describe("Marketplace", async () => {
           { name: "itemType", type: "string" },
           { name: "extraType", type: "string" },
           { name: "price", type: "uint256" },
+          { name: "amount", type: "uint256" },
           { name: "tokenAddress", type: "address" },
           { name: "receiver", type: "address" },
           { name: "nonce", type: "string" },
@@ -80,6 +81,7 @@ describe("Marketplace", async () => {
         itemType: "box",
         extraType: "",
         price: ethers.utils.parseEther("1"),
+        amount: 1,
         tokenAddress: "0x0000000000000000000000000000000000000000",
         receiver: deployer.address,
         nonce: nonce,
@@ -171,6 +173,7 @@ describe("Marketplace", async () => {
           { name: "itemType", type: "string" },
           { name: "extraType", type: "string" },
           { name: "price", type: "uint256" },
+          { name: "amount", type: "uint256" },
           { name: "tokenAddress", type: "address" },
           { name: "receiver", type: "address" },
           { name: "nonce", type: "string" },
@@ -181,6 +184,7 @@ describe("Marketplace", async () => {
         itemType: "box",
         extraType: "",
         price: ethers.utils.parseEther("1"),
+        amount: 1,
         tokenAddress: "0x0000000000000000000000000000000000000000",
         receiver: deployer.address,
         nonce: nonce,
@@ -292,6 +296,7 @@ describe("Marketplace", async () => {
           { name: "itemType", type: "string" },
           { name: "extraType", type: "string" },
           { name: "price", type: "uint256" },
+          { name: "amount", type: "uint256" },
           { name: "tokenAddress", type: "address" },
           { name: "receiver", type: "address" },
           { name: "nonce", type: "string" },
@@ -302,6 +307,7 @@ describe("Marketplace", async () => {
         itemType: "box",
         extraType: "",
         price: ethers.utils.parseEther("1"),
+        amount: 1,
         tokenAddress: "0x0000000000000000000000000000000000000000",
         receiver: deployer.address,
         nonce: nonce,
