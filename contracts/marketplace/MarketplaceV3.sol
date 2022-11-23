@@ -13,7 +13,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "../interfaces/IBlacklist.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
-
 contract MarketplaceV3Upgradeable is
     OwnableUpgradeable,
     EIP712Upgradeable,
@@ -34,6 +33,7 @@ contract MarketplaceV3Upgradeable is
         bool isExist;
         uint256[] priceList;
         address[] tokenAddress;
+        bool useBUSD;
     }
 
     struct OrderItemStruct {
@@ -45,6 +45,16 @@ contract MarketplaceV3Upgradeable is
         address itemAddress;
         uint256[] price;
         address[] tokenAddress;
+        bool useBUSD;
+        string nonce;
+        bytes signature;
+    }
+
+    struct BuyItemStruct {
+        string id;
+        address tokenAddress;
+        uint256 amount;
+        bool useBUSD;
         string nonce;
         bytes signature;
     }
@@ -53,20 +63,22 @@ contract MarketplaceV3Upgradeable is
         string id,
         string itemType,
         string extraType,
-        uint256 indexed tokenId,
-        address indexed owner,
+        bool useBUSD,
         uint256[] price,
         address[] tokenAddress,
-        uint64 timestamp
+        uint256 indexed tokenId,
+        address indexed owner
+        // uint64 timestamp
     );
 
     event BuyEvent(
         string id,
         string itemType,
         string extraType,
-        uint256 tokenId,
-        address owner,
+        uint256 indexed tokenId,
+        address indexed owner,
         uint256 price,
+        bool useBUSD,
         address tokenAddress,
         address buyer,
         uint64 timestamp
@@ -155,13 +167,6 @@ contract MarketplaceV3Upgradeable is
         require(!_noncesMap[data.nonce], "The nonce has been used");
         _noncesMap[data.nonce] = true;
 
-        // Check price
-        require(
-            data.tokenAddress.length == data.price.length &&
-                data.tokenAddress.length > 0,
-            "Length price and token invalid"
-        );
-
         if (!itemsMap[data.id].isExist) {
             IERC721Upgradeable(data.itemAddress).safeTransferFrom(
                 _msgSender(),
@@ -174,7 +179,6 @@ contract MarketplaceV3Upgradeable is
                 "Not owner of NFT"
             );
         }
-        updatePrice(data.id);
 
         itemsMap[data.id] = ItemStruct({
             id: data.id,
@@ -186,27 +190,20 @@ contract MarketplaceV3Upgradeable is
             price: 0,
             priceList: data.price,
             tokenAddress: data.tokenAddress,
-            isExist: true
+            isExist: true,
+            useBUSD: data.useBUSD
         });
-
-        for (uint256 i = 0; i < data.tokenAddress.length; i++) {
-            require(
-                allowedToken[data.tokenAddress[i]],
-                "Not allowed token to sell"
-            );
-            require(data.price[i] > 0, "Price > 0");
-            tokenPrice[data.id][data.tokenAddress[i]] = data.price[i];
-        }
 
         emit OfferEvent(
             data.id,
             data.itemType,
             data.extraType,
-            data.tokenId,
-            _msgSender(),
+            data.useBUSD,
             data.price,
             data.tokenAddress,
-            uint64(block.timestamp)
+            data.tokenId,
+            _msgSender()
+            // uint64(block.timestamp)
         );
     }
 
@@ -229,7 +226,7 @@ contract MarketplaceV3Upgradeable is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "OrderItemStruct(address walletAddress,string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256[] price,address[] tokenAddress,string nonce)"
+                            "OrderItemStruct(address walletAddress,string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256[] price,address[] tokenAddress,bool useBUSD,string nonce)"
                         ),
                         _msgSender(),
                         keccak256(bytes(data.id)),
@@ -239,40 +236,45 @@ contract MarketplaceV3Upgradeable is
                         data.itemAddress,
                         keccak256(abi.encodePacked(data.price)),
                         keccak256(abi.encodePacked(data.tokenAddress)),
+                        data.useBUSD,
                         keccak256(bytes(data.nonce))
                     )
                 )
             );
     }
 
-    function buy(
-        string memory id,
-        address tokenAddress,
-        uint256 amount
-    ) public payable nonReentrant isBanned(_msgSender()) whenNotPaused {
+    function buy(BuyItemStruct calldata data)
+        public
+        payable
+        nonReentrant
+        isBanned(_msgSender())
+        whenNotPaused
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyBuyItem(data);
+        // Make sure that the signer is authorized to offer item
+        require(signer == operator, "Signature invalid or unauthorized");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
         // Check exists & don't buy own
-        require(itemsMap[id].isExist, "Item is not in marketplace");
+        require(itemsMap[data.id].isExist, "Item is not in marketplace");
         require(
-            itemsMap[id].owner != _msgSender(),
+            itemsMap[data.id].owner != _msgSender(),
             "You cannot buy your own item"
         );
-        require(allowedToken[tokenAddress], "Token not for sale");
-        require(tokenPrice[id][tokenAddress] > 0, "Token not listed");
 
-        ItemStruct memory item = itemsMap[id];
+        ItemStruct memory item = itemsMap[data.id];
 
-        uint256 totalFeesShareAmount = (tokenPrice[id][tokenAddress] *
+        uint256 totalFeesShareAmount = (data.amount *
             feesCollectorCutPerMillion) / 1_000_000;
-        uint256 ownerShareAmount = tokenPrice[id][tokenAddress] -
-            totalFeesShareAmount;
+        uint256 ownerShareAmount = data.amount - totalFeesShareAmount;
 
         // Transfer payment
-        if (tokenAddress == address(0)) {
-            require(
-                msg.value == amount &&
-                    msg.value == tokenPrice[id][tokenAddress],
-                "Not same price"
-            );
+        if (data.tokenAddress == address(0)) {
+            require(msg.value == data.amount, "Not same price");
             //transfer with BNB
             if (totalFeesShareAmount > 0) {
                 (bool success, ) = feesCollectorAddress.call{
@@ -284,14 +286,13 @@ contract MarketplaceV3Upgradeable is
             (bool success, ) = item.owner.call{value: ownerShareAmount}("");
             require(success, "Transfer money failed");
         } else {
-            require(amount == tokenPrice[id][tokenAddress], "Not same price");
             // transfer with token
-            IERC20Upgradeable(tokenAddress).safeTransferFrom(
+            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
                 _msgSender(),
                 feesCollectorAddress,
                 totalFeesShareAmount
             );
-            IERC20Upgradeable(tokenAddress).safeTransferFrom(
+            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
                 _msgSender(),
                 item.owner,
                 ownerShareAmount
@@ -303,7 +304,6 @@ contract MarketplaceV3Upgradeable is
             _msgSender(),
             item.tokenId
         );
-        updatePrice(id);
 
         emit BuyEvent(
             item.id,
@@ -311,13 +311,45 @@ contract MarketplaceV3Upgradeable is
             item.extraType,
             item.tokenId,
             item.owner,
-            tokenPrice[id][tokenAddress],
-            tokenAddress,
+            data.amount,
+            data.useBUSD,
+            data.tokenAddress,
             _msgSender(),
             uint64(block.timestamp)
         );
 
-        delete itemsMap[id];
+        delete itemsMap[data.id];
+    }
+
+    function _verifyBuyItem(BuyItemStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashBuyItem(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashBuyItem(BuyItemStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "BuyItemStruct(string id,address tokenAddress,uint256 amount,bool useBUSD,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        data.tokenAddress,
+                        data.amount,
+                        data.useBUSD,
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
     }
 
     function withdraw(string memory id)
@@ -335,7 +367,6 @@ contract MarketplaceV3Upgradeable is
             _msgSender(),
             item.tokenId
         );
-        updatePrice(id);
 
         emit WithdrawEvent(
             item.id,
@@ -347,15 +378,6 @@ contract MarketplaceV3Upgradeable is
         );
 
         delete itemsMap[id];
-    }
-
-    function updatePrice(string memory id) internal {
-        if (itemsMap[id].tokenAddress.length > 0) {
-            uint256 length = itemsMap[id].tokenAddress.length;
-            for (uint256 i = 0; i < length; i++) {
-                tokenPrice[id][itemsMap[id].tokenAddress[i]] = 0;
-            }
-        }
     }
 
     function setAllowedToken(address token, bool isAllowed) external onlyOwner {
@@ -379,12 +401,12 @@ contract MarketplaceV3Upgradeable is
         return _paused;
     }
 
-    function setPause() onlyOwner external whenNotPaused {
+    function setPause() external onlyOwner whenNotPaused {
         _paused = true;
         emit Paused(_msgSender());
     }
 
-    function setUnpause()onlyOwner external whenPaused {
+    function setUnpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(_msgSender());
     }

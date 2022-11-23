@@ -40,7 +40,7 @@ const config: HardhatUserConfig = {
           : [],
     },
     bscTestnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      url: "https://data-seed-prebsc-2-s1.binance.org:8545/",
       gas: 5000000,
       chainId: 97,
       // accounts: {

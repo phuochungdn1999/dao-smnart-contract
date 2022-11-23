@@ -25,7 +25,7 @@
     "updateMarketplace:bscTestnet": "npx hardhat run ./scripts/marketplace/upgradeMarketplaceMain.ts --network bscTestnet",
     "updateGame:bscTestnet": "npx hardhat run ./scripts/game/upgradeGameMain.ts --network bscTestnet",
     "updateVault:bscTestnet": "npx hardhat run ./scripts/vault/upgradeVaultMain.ts --network bscTestnet",
-    "verify:bscTestnet":" npx hardhat verify 0xD2940D697Eb9Cd749Fef8B10FC9311FEE280C36E --network bscTestnet",
+    "verify:bscTestnet":" npx hardhat verify 0x44008A743DEae9E473f3DB215e772B31C3AC6B80 --network bscTestnet",
     "deployRunGem:bsc": "npx hardhat run ./scripts/coin/deployRUNGEMMain.ts --network bsc",
     "deployRunNow:bsc": "npx hardhat run ./scripts/coin/deployRUNNOWMain.ts --network bsc",
     "deployGame:bsc": "npx hardhat run ./scripts/game/deployGameMain.ts --network bsc",

@@ -103,6 +103,7 @@ describe("Marketplace", async () => {
       await txApprove.wait();
 
       // Offer
+
       const nonce2 = uuidv4();
       const auth2 = {
         signer: deployer,
@@ -119,10 +120,11 @@ describe("Marketplace", async () => {
           { name: "itemAddress", type: "address" },
           { name: "price", type: "uint256[]" },
           { name: "tokenAddress", type: "address[]" },
+          { name: "useBUSD", type: "bool" },
           { name: "nonce", type: "string" },
         ],
       };
-      const listItemPrice = [ethers.utils.parseEther("1")];
+      const listItemPrice = [ethers.utils.parseEther("100")];
       const price = listItemPrice.map((i: any) => {
         return i?.toLocaleString("fullwide", { useGrouping: false });
       });
@@ -135,6 +137,7 @@ describe("Marketplace", async () => {
         itemAddress: NFTContract.address,
         price: price,
         tokenAddress: [nullAddress],
+        useBUSD: true,
         nonce: nonce2,
       };
 
@@ -222,6 +225,7 @@ describe("Marketplace", async () => {
           { name: "itemAddress", type: "address" },
           { name: "price", type: "uint256[]" },
           { name: "tokenAddress", type: "address[]" },
+          { name: "useBUSD", type: "bool" },
           { name: "nonce", type: "string" },
         ],
       };
@@ -238,6 +242,7 @@ describe("Marketplace", async () => {
         itemAddress: NFTContract.address,
         price: price,
         tokenAddress: [nullAddress],
+        useBUSD: true,
         nonce: nonce2,
       };
 
@@ -260,14 +265,36 @@ describe("Marketplace", async () => {
       );
 
       // Buy
-      const tx3 = await MarketplaceContract.connect(buyer).buy(
-        orderItem2.id,
-        nullAddress,
-        ethers.utils.parseEther("100"),
-        {
-          value: ethers.utils.parseEther("100"),
-        }
-      );
+
+      const nonce3 = uuidv4();
+      const auth3 = {
+        signer: deployer,
+        contract: MarketplaceContract.address,
+      };
+
+      const types3 = {
+        BuyItemStruct: [
+          { name: "id", type: "string" },
+          { name: "tokenAddress", type: "address" },
+          { name: "amount", type: "uint256" },
+          { name: "useBUSD", type: "bool" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+
+      const buyItem = {
+        id: "123",
+        tokenAddress: nullAddress,
+        amount: ethers.utils.parseEther("100"),
+        useBUSD: true,
+        nonce: nonce3,
+      };
+
+      const signature3 = await hashOrderItem(types3, auth3, buyItem);
+      const tx3 = await MarketplaceContract.connect(buyer).buy(signature3, {
+        value: ethers.utils.parseEther("100"),
+      });
+      await tx3.wait();
       const receipt = await tx3.wait();
       const event = receipt.events?.filter((x: any) => {
         return x.event === "BuyEvent";
@@ -345,6 +372,7 @@ describe("Marketplace", async () => {
           { name: "itemAddress", type: "address" },
           { name: "price", type: "uint256[]" },
           { name: "tokenAddress", type: "address[]" },
+          { name: "useBUSD", type: "bool" },
           { name: "nonce", type: "string" },
         ],
       };
@@ -364,6 +392,7 @@ describe("Marketplace", async () => {
         itemAddress: NFTContract.address,
         price: price,
         tokenAddress: [nullAddress, RungemContract.address],
+        useBUSD: true,
         nonce: nonce2,
       };
 
@@ -392,11 +421,32 @@ describe("Marketplace", async () => {
       );
 
       // Buy
-      const tx3 = await MarketplaceContract.connect(buyer).buy(
-        orderItem2.id,
-        RungemContract.address,
-        ethers.utils.parseEther("100")
-      );
+      const nonce3 = uuidv4();
+      const auth3 = {
+        signer: deployer,
+        contract: MarketplaceContract.address,
+      };
+
+      const types3 = {
+        BuyItemStruct: [
+          { name: "id", type: "string" },
+          { name: "tokenAddress", type: "address" },
+          { name: "amount", type: "uint256" },
+          { name: "useBUSD", type: "bool" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+
+      const buyItem = {
+        id: "123",
+        tokenAddress: RungemContract.address,
+        amount: ethers.utils.parseEther("100"),
+        useBUSD: true,
+        nonce: nonce3,
+      };
+
+      const signature3 = await hashOrderItem(types3, auth3, buyItem);
+      const tx3 = await MarketplaceContract.connect(buyer).buy(signature3);
       await tx3.wait();
 
       expect(
