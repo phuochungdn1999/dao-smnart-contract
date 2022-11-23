@@ -454,4 +454,285 @@ describe("Marketplace", async () => {
       ).to.equal(1);
     });
   });
+  describe("Lending", () => {
+    it("Offer Lending,Borrow,Owner Withdraw lending NFT", async () => {
+      const nonce = uuidv4();
+      const auth = {
+        signer: deployer,
+        contract: NFTContract.address,
+      };
+      const types = {
+        ItemVoucherStruct: [
+          { name: "id", type: "string" },
+          { name: "itemType", type: "string" },
+          { name: "extraType", type: "string" },
+          { name: "price", type: "uint256" },
+          { name: "amount", type: "uint256" },
+          { name: "tokenAddress", type: "address" },
+          { name: "receiver", type: "address" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+      const voucher = {
+        id: "123123",
+        itemType: "box",
+        extraType: "",
+        price: ethers.utils.parseEther("1"),
+        amount: 1,
+        tokenAddress: "0x0000000000000000000000000000000000000000",
+        receiver: deployer.address,
+        nonce: nonce,
+      };
+      const signature = await createVoucher(types, auth, voucher);
+      const tx = await NFTContract.connect(deployer).redeem(signature, {
+        value: ethers.utils.parseEther("1"),
+      });
+      await tx.wait();
+      expect(await await NFTContract.connect(deployer).ownerOf(1)).to.equal(
+        deployer.address
+      );
+
+      const txApprove = await NFTContract.connect(deployer).approve(
+        MarketplaceContract.address,
+        1
+      );
+      await txApprove.wait();
+
+      // Offer lending
+
+      const nonce2 = uuidv4();
+      const auth2 = {
+        signer: deployer,
+        contract: MarketplaceContract.address,
+      };
+
+      const types2 = {
+        LendingOrderItemStruct: [
+          { name: "owner", type: "address" },
+          { name: "id", type: "string" },
+          { name: "itemType", type: "string" },
+          { name: "extraType", type: "string" },
+          { name: "tokenId", type: "uint256" },
+          { name: "itemAddress", type: "address" },
+          { name: "price", type: "uint256[]" },
+          { name: "tokenAddress", type: "address[]" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+      const listItemPrice = [ethers.utils.parseEther("100")];
+      const price = listItemPrice.map((i: any) => {
+        return i?.toLocaleString("fullwide", { useGrouping: false });
+      });
+      const orderItem2 = {
+        owner: deployer.address,
+        id: "123",
+        itemType: "box",
+        extraType: "",
+        tokenId: 1,
+        itemAddress: NFTContract.address,
+        price: price,
+        tokenAddress: [nullAddress],
+        nonce: nonce2,
+      };
+
+      const signature2 = await hashOrderItem(types2, auth2, orderItem2);
+      const tx2 = await MarketplaceContract.connect(deployer).offerLending(
+        signature2
+      );
+      await tx2.wait();
+      expect(
+        await NFTContract.connect(deployer).balanceOf(
+          MarketplaceContract.address
+        )
+      ).to.equal(1);
+
+      // Borrow
+
+      const nonce3 = uuidv4();
+      const auth3 = {
+        signer: deployer,
+        contract: MarketplaceContract.address,
+      };
+
+      const types3 = {
+        BorrowItemStruct: [
+          { name: "id", type: "string" },
+          { name: "itemType", type: "string" },
+          { name: "extraType", type: "string" },
+          { name: "tokenId", type: "uint256" },
+          { name: "itemAddress", type: "address" },
+          { name: "amount", type: "uint256" },
+          { name: "tokenAddress", type: "address" },
+          { name: "borrower", type: "address" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+
+      const orderItem3 = {
+        id: "123",
+        itemType: "box",
+        extraType: "",
+        tokenId: 1,
+        itemAddress: NFTContract.address,
+        amount: ethers.utils.parseEther("1"),
+        tokenAddress: nullAddress,
+        borrower: buyer.address,
+        nonce: nonce3,
+      };
+
+      const signature3 = await hashOrderItem(types3, auth3, orderItem3);
+      const tx3 = await MarketplaceContract.connect(buyer).borrow(signature3);
+      await tx3.wait();
+
+      // Withdraw
+      const tx4 = await MarketplaceContract.connect(
+        deployer
+      ).withdrawLendingNFT(orderItem2.id);
+      await tx4.wait();
+
+      expect(
+        await NFTContract.connect(deployer).balanceOf(deployer.address)
+      ).to.equal(1);
+    });
+
+    it("Offer Lending,Borrow,Borrower Withdraw lending NFT", async () => {
+      const nonce = uuidv4();
+      const auth = {
+        signer: deployer,
+        contract: NFTContract.address,
+      };
+      const types = {
+        ItemVoucherStruct: [
+          { name: "id", type: "string" },
+          { name: "itemType", type: "string" },
+          { name: "extraType", type: "string" },
+          { name: "price", type: "uint256" },
+          { name: "amount", type: "uint256" },
+          { name: "tokenAddress", type: "address" },
+          { name: "receiver", type: "address" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+      const voucher = {
+        id: "123123",
+        itemType: "box",
+        extraType: "",
+        price: ethers.utils.parseEther("1"),
+        amount: 1,
+        tokenAddress: "0x0000000000000000000000000000000000000000",
+        receiver: deployer.address,
+        nonce: nonce,
+      };
+      const signature = await createVoucher(types, auth, voucher);
+      const tx = await NFTContract.connect(deployer).redeem(signature, {
+        value: ethers.utils.parseEther("1"),
+      });
+      await tx.wait();
+      expect(await await NFTContract.connect(deployer).ownerOf(1)).to.equal(
+        deployer.address
+      );
+
+      const txApprove = await NFTContract.connect(deployer).approve(
+        MarketplaceContract.address,
+        1
+      );
+      await txApprove.wait();
+
+      // Offer lending
+
+      const nonce2 = uuidv4();
+      const auth2 = {
+        signer: deployer,
+        contract: MarketplaceContract.address,
+      };
+
+      const types2 = {
+        LendingOrderItemStruct: [
+          { name: "owner", type: "address" },
+          { name: "id", type: "string" },
+          { name: "itemType", type: "string" },
+          { name: "extraType", type: "string" },
+          { name: "tokenId", type: "uint256" },
+          { name: "itemAddress", type: "address" },
+          { name: "price", type: "uint256[]" },
+          { name: "tokenAddress", type: "address[]" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+      const listItemPrice = [ethers.utils.parseEther("100")];
+      const price = listItemPrice.map((i: any) => {
+        return i?.toLocaleString("fullwide", { useGrouping: false });
+      });
+      const orderItem2 = {
+        owner: deployer.address,
+        id: "123",
+        itemType: "box",
+        extraType: "",
+        tokenId: 1,
+        itemAddress: NFTContract.address,
+        price: price,
+        tokenAddress: [nullAddress],
+        nonce: nonce2,
+      };
+
+      const signature2 = await hashOrderItem(types2, auth2, orderItem2);
+      const tx2 = await MarketplaceContract.connect(deployer).offerLending(
+        signature2
+      );
+      await tx2.wait();
+      expect(
+        await NFTContract.connect(deployer).balanceOf(
+          MarketplaceContract.address
+        )
+      ).to.equal(1);
+
+      // Borrow
+
+      const nonce3 = uuidv4();
+      const auth3 = {
+        signer: deployer,
+        contract: MarketplaceContract.address,
+      };
+
+      const types3 = {
+        BorrowItemStruct: [
+          { name: "id", type: "string" },
+          { name: "itemType", type: "string" },
+          { name: "extraType", type: "string" },
+          { name: "tokenId", type: "uint256" },
+          { name: "itemAddress", type: "address" },
+          { name: "amount", type: "uint256" },
+          { name: "tokenAddress", type: "address" },
+          { name: "borrower", type: "address" },
+          { name: "nonce", type: "string" },
+        ],
+      };
+
+      const orderItem3 = {
+        id: "123",
+        itemType: "box",
+        extraType: "",
+        tokenId: 1,
+        itemAddress: NFTContract.address,
+        amount: ethers.utils.parseEther("1"),
+        tokenAddress: nullAddress,
+        borrower: buyer.address,
+        nonce: nonce3,
+      };
+
+      const signature3 = await hashOrderItem(types3, auth3, orderItem3);
+      const tx3 = await MarketplaceContract.connect(buyer).borrow(signature3);
+      await tx3.wait();
+
+      // Withdraw
+      const tx4 = await MarketplaceContract.connect(buyer).withdrawLendingNFT(
+        orderItem2.id
+      );
+      await tx4.wait();
+
+      expect(
+        await NFTContract.connect(deployer).balanceOf(deployer.address)
+      ).to.equal(1);
+    });
+  });
 });

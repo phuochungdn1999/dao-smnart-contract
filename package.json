@@ -25,7 +25,7 @@
     "updateMarketplace:bscTestnet": "npx hardhat run ./scripts/marketplace/upgradeMarketplaceMain.ts --network bscTestnet",
     "updateGame:bscTestnet": "npx hardhat run ./scripts/game/upgradeGameMain.ts --network bscTestnet",
     "updateVault:bscTestnet": "npx hardhat run ./scripts/vault/upgradeVaultMain.ts --network bscTestnet",
-    "verify:bscTestnet":" npx hardhat verify 0x44008A743DEae9E473f3DB215e772B31C3AC6B80 --network bscTestnet",
+    "verify:bscTestnet":" npx hardhat verify 0x0082373dBB6aDa3f3b3b4A03a9B7820492A1F4e1 --network bscTestnet",
     "deployRunGem:bsc": "npx hardhat run ./scripts/coin/deployRUNGEMMain.ts --network bsc",
     "deployRunNow:bsc": "npx hardhat run ./scripts/coin/deployRUNNOWMain.ts --network bsc",
     "deployGame:bsc": "npx hardhat run ./scripts/game/deployGameMain.ts --network bsc",
@@ -43,7 +43,8 @@
     "updateGame:bsc": "npx hardhat run ./scripts/game/upgradeGameMain.ts --network bsc",
     "updateVesting:bsc": "npx hardhat run ./scripts/vesting/upgradeVestingMain.ts --network bsc",
     "updateRunnow:bsc": "npx hardhat run ./scripts/coin/upgradeRunnowMain.ts --network bsc",
-    "verify:bsc":" npx hardhat verify  0x24e3eB44af807b54B8F425e25c1e4Eb575759aEC --network bsc"
+    "verify:bsc":" npx hardhat verify  0x24e3eB44af807b54B8F425e25c1e4Eb575759aEC --network bsc",
+    "compile":"npx hardhat compile"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",

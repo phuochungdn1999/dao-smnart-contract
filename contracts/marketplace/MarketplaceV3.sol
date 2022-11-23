@@ -36,6 +36,19 @@ contract MarketplaceV3Upgradeable is
         bool useBUSD;
     }
 
+    struct LendingStruct {
+        string id;
+        string itemType;
+        string extraType;
+        uint256 tokenId;
+        address owner;
+        address itemAddress;
+        address borrower;
+        uint256[] price;
+        address[] tokenAddress;
+        bool isExist;
+    }
+
     struct OrderItemStruct {
         address walletAddress;
         string id;
@@ -50,11 +63,48 @@ contract MarketplaceV3Upgradeable is
         bytes signature;
     }
 
+    struct LendingOrderItemStruct {
+        address owner;
+        string id;
+        string itemType;
+        string extraType;
+        uint256 tokenId;
+        address itemAddress;
+        uint256[] price;
+        address[] tokenAddress;
+        string nonce;
+        bytes signature;
+    }
+
     struct BuyItemStruct {
         string id;
         address tokenAddress;
         uint256 amount;
         bool useBUSD;
+        string nonce;
+        bytes signature;
+    }
+
+    struct BorrowItemStruct {
+        string id;
+        string itemType;
+        string extraType;
+        uint256 tokenId;
+        address itemAddress;
+        uint256 amount;
+        address tokenAddress;
+        address borrower;
+        string nonce;
+        bytes signature;
+    }
+
+    struct CancelLendingItemStruct {
+        string id;
+        string itemType;
+        string extraType;
+        uint256 tokenId;
+        address itemAddress;
+        address owner;
         string nonce;
         bytes signature;
     }
@@ -69,6 +119,39 @@ contract MarketplaceV3Upgradeable is
         uint256 indexed tokenId,
         address indexed owner
         // uint64 timestamp
+    );
+
+    event LendNFTEvent(
+        string id,
+        string itemType,
+        string extraType,
+        uint256[] price,
+        address[] tokenAddress,
+        uint256 indexed tokenId,
+        address indexed owner,
+        uint64 timestamp
+    );
+
+    event BorrowNFTEvent(
+        string id,
+        string itemType,
+        string extraType,
+        uint256 tokenId,
+        address itemAddress,
+        uint256 amount,
+        address tokenAddress,
+        address indexed borrower
+    );
+
+    event CancelLendingNFTEvent(
+        string id,
+        string itemType,
+        string extraType,
+        uint256 tokenId,
+        address itemAddress,
+        address owner,
+        address borrower,
+        uint64 timestamp
     );
 
     event BuyEvent(
@@ -112,6 +195,8 @@ contract MarketplaceV3Upgradeable is
     address public operator;
     address public banContractAddress;
     bool private _paused;
+
+    mapping(string => LendingStruct) public lendingMap;
 
     modifier isBanned(address _user) {
         require(!IBlacklist(banContractAddress).isBanned(_user), "Banned");
@@ -378,6 +463,204 @@ contract MarketplaceV3Upgradeable is
         );
 
         delete itemsMap[id];
+    }
+
+    function offerLending(LendingOrderItemStruct calldata data)
+        public
+        nonReentrant
+        isBanned(_msgSender())
+        whenNotPaused
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyLendingItem(data);
+        // Make sure that the signer is authorized to offer item
+        require(signer == operator, "Signature invalid or unauthorized");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        if (!lendingMap[data.id].isExist) {
+            IERC721Upgradeable(data.itemAddress).safeTransferFrom(
+                _msgSender(),
+                address(this),
+                data.tokenId
+            );
+        } else {
+            require(
+                _msgSender() == lendingMap[data.id].owner,
+                "Not owner of NFT"
+            );
+        }
+
+        lendingMap[data.id] = LendingStruct({
+            id: data.id,
+            itemType: data.itemType,
+            extraType: data.extraType,
+            itemAddress: data.itemAddress,
+            tokenId: data.tokenId,
+            owner: _msgSender(),
+            borrower: address(0),
+            price: data.price,
+            tokenAddress: data.tokenAddress,
+            isExist: true
+        });
+
+        emit LendNFTEvent(
+            data.id,
+            data.itemType,
+            data.extraType,
+            data.price,
+            data.tokenAddress,
+            data.tokenId,
+            _msgSender(),
+            uint64(block.timestamp)
+        );
+    }
+
+    function _verifyLendingItem(LendingOrderItemStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashLendingItem(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashLendingItem(LendingOrderItemStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "LendingOrderItemStruct(address owner,string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256[] price,address[] tokenAddress,string nonce)"
+                        ),
+                        _msgSender(),
+                        keccak256(bytes(data.id)),
+                        keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.extraType)),
+                        data.tokenId,
+                        data.itemAddress,
+                        keccak256(abi.encodePacked(data.price)),
+                        keccak256(abi.encodePacked(data.tokenAddress)),
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
+    function borrow(BorrowItemStruct calldata data)
+        public
+        payable
+        nonReentrant
+        isBanned(_msgSender())
+        whenNotPaused
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyBorrowItem(data);
+        // Make sure that the signer is authorized to offer item
+        require(signer == operator, "Signature invalid or unauthorized");
+
+        require(_msgSender() == data.borrower, "Not the same sender");
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        // Check exists & don't buy own
+        require(lendingMap[data.id].isExist, "Item is not for lending");
+        require(lendingMap[data.id].borrower == address(0), "Already has borrower");
+
+        require(
+            lendingMap[data.id].owner != _msgSender(),
+            "You cannot lend your own item"
+        );
+
+        lendingMap[data.id].borrower = _msgSender();
+
+        emit BorrowNFTEvent(
+            data.id,
+            data.itemType,
+            data.extraType,
+            data.tokenId,
+            data.itemAddress,
+            data.amount,
+            data.tokenAddress,
+            _msgSender()
+        );
+
+        delete itemsMap[data.id];
+    }
+
+    function _verifyBorrowItem(BorrowItemStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashBorrowItem(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashBorrowItem(BorrowItemStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "BorrowItemStruct(string id,string itemType,string extraType,uint256 tokenId,address itemAddress,uint256 amount,address tokenAddress,address borrower,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.extraType)),
+                        data.tokenId,
+                        data.itemAddress,
+                        data.amount,
+                        data.tokenAddress,
+                        data.borrower,
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
+    function withdrawLendingNFT(string memory id)
+        public
+        nonReentrant
+        isBanned(_msgSender())
+        whenNotPaused
+    {
+        LendingStruct memory item = lendingMap[id];
+
+        require(
+            _msgSender() == item.owner || _msgSender() == item.borrower,
+            "Not in lending contract"
+        );
+
+        IERC721Upgradeable(item.itemAddress).safeTransferFrom(
+            address(this),
+            item.owner,
+            item.tokenId
+        );
+
+        emit CancelLendingNFTEvent(
+            item.id,
+            item.itemType,
+            item.extraType,
+            item.tokenId,
+            item.itemAddress,
+            item.owner,
+            item.borrower,
+            uint64(block.timestamp)
+        );
+
+        delete lendingMap[id];
     }
 
     function setAllowedToken(address token, bool isAllowed) external onlyOwner {
