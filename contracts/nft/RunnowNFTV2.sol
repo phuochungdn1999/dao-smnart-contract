@@ -31,6 +31,7 @@ contract RunnowNFTUpgradeableV2 is
         string itemType;
         string extraType;
         uint256 price;
+        uint256 amount;
         address tokenAddress;
         address receiver;
         string nonce;
@@ -76,6 +77,29 @@ contract RunnowNFTUpgradeableV2 is
         string nonce;
         bytes signature;
     }
+
+    struct TransferStruct {
+        string id;
+        uint256 tokenId;
+        uint256 price;
+        address from;
+        address to;
+        address tokenAddress;
+        address nftAddress;
+        string nonce;
+        bytes signature;
+    }
+
+    event TransferOnWebEvent(
+        string indexed id,
+        uint256 tokenId,
+        uint256 price,
+        address from,
+        address to,
+        address tokenAddress,
+        address nftAddress,
+        string nonce
+    );
 
     event OpenStarterBoxEvent(
         address indexed user,
@@ -175,6 +199,7 @@ contract RunnowNFTUpgradeableV2 is
         // Make sure that the signer is authorized to mint an item
         require(signer == operator, "Signature invalid or unauthorized");
         require(_msgSender() == data.receiver, "Wrong calller and receiver");
+        require(data.amount > 0, "Amount greater than 0");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
@@ -194,20 +219,21 @@ contract RunnowNFTUpgradeableV2 is
         }
 
         // Mint
-        _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
-        _mint(_msgSender(), newTokenId);
-
-        emit RedeemEvent(
-            _msgSender(),
-            data.id,
-            data.itemType,
-            data.extraType,
-            newTokenId,
-            data.nonce,
-            data.tokenAddress,
-            uint64(block.timestamp)
-        );
+        for (uint256 i = 0; i < data.amount; i++) {
+            _tokenIds.increment();
+            uint256 newTokenId = _tokenIds.current();
+            _mint(_msgSender(), newTokenId);
+            emit RedeemEvent(
+                _msgSender(),
+                data.id,
+                data.itemType,
+                data.extraType,
+                newTokenId,
+                data.nonce,
+                data.tokenAddress,
+                uint64(block.timestamp)
+            );
+        }
     }
 
     function _verifyItemVoucher(ItemVoucherStruct calldata data)
@@ -229,12 +255,13 @@ contract RunnowNFTUpgradeableV2 is
                 keccak256(
                     abi.encode(
                         keccak256(
-                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,address tokenAddress,address receiver,string nonce)"
+                            "ItemVoucherStruct(string id,string itemType,string extraType,uint256 price,uint256 amount,address tokenAddress,address receiver,string nonce)"
                         ),
                         keccak256(bytes(data.id)),
                         keccak256(bytes(data.itemType)),
                         keccak256(bytes(data.extraType)),
                         data.price,
+                        data.amount,
                         data.tokenAddress,
                         data.receiver,
                         keccak256(bytes(data.nonce))
@@ -514,5 +541,84 @@ contract RunnowNFTUpgradeableV2 is
                     )
                 )
             );
+    }
+
+    function _verifyTransfer(TransferStruct calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashTransfer(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashTransfer(TransferStruct calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "TransferStruct(string id,uint256 tokenId,uint256 price,address from,address to,address tokenAddress,address nftAddress,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        data.tokenId,
+                        data.price,
+                        data.from,
+                        data.to,
+                        data.tokenAddress,
+                        data.nftAddress,
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
+    function transferOnMarketplace(TransferStruct calldata data)
+        public
+        payable
+        isBanned(_msgSender())
+        whenNotPaused
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyTransfer(data);
+        // Make sure that the signer is authorized to mint an item
+        require(signer == operator, "Signature invalid or unauthorized");
+        require(_msgSender() == data.from, "Wrong calller");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        // Transfer payment
+        if (data.tokenAddress == address(0)) {
+            require(msg.value >= data.price, "Not enough money");
+            (bool success, ) = devWalletAddress.call{value: msg.value}("");
+            require(success, "Transfer payment failed");
+        } else {
+            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
+                msg.sender,
+                devWalletAddress,
+                data.price
+            );
+        }
+        this.safeTransferFrom(data.from, data.to, data.tokenId, "");
+
+        // Mint
+        // ERC.safeTransferFrom(data.from,data.to, data.id);
+
+        emit TransferOnWebEvent(
+            data.id,
+            data.tokenId,
+            data.price,
+            data.from,
+            data.to,
+            data.tokenAddress,
+            data.nftAddress,
+            data.nonce
+        );
     }
 }

@@ -112,6 +112,7 @@ contract IDOBuyUpgradeable is
         require(signer == operator,"Signature invalid or unauthorized");
         require(buyStruct.amount > 0, "Amount must be greater than zero");
         require(!_noncesMap[buyStruct.nonce],"nonce already used");
+        _noncesMap[buyStruct.nonce] = true;
 
         IERC20Upgradeable(buyStruct.tokenAddress).safeTransferFrom(
             _msgSender(),

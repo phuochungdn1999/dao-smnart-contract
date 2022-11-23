@@ -393,6 +393,10 @@ contract GameUpgradeable is
         banContractAddress = data;
     }
 
+    function setBanContractAddress1(address data) external onlyOwner {
+        banContractAddress = data;
+    }
+
     function paused() public view virtual returns (bool) {
         return _paused;
     }
@@ -471,5 +475,14 @@ contract GameUpgradeable is
                     )
                 )
             );
+    }
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }

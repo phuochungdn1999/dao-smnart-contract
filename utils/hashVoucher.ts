@@ -5,10 +5,16 @@ import hre from "hardhat";
 const SIGNING_DOMAIN_NAME = "NFT-Voucher";
 const SIGNING_DOMAIN_VERSION = "1";
 
-export const createVoucher = async (types: any, auth: any, voucher: any) => {
+export const createVoucher = async (
+  types: any,
+  auth: any,
+  voucher: any,
+  name: any = "NFT-Voucher",
+  version: any = "1"
+) => {
   const domain = {
-    name: SIGNING_DOMAIN_NAME,
-    version: SIGNING_DOMAIN_VERSION,
+    name: name,
+    version: version,
     verifyingContract: auth.contract,
     chainId: hre.network.config.chainId,
   };
