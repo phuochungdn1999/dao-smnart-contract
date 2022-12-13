@@ -38,6 +38,17 @@ contract RunnowNFTUpgradeableV2 is
         bytes signature;
     }
 
+    struct ItemVoucherStructOld {
+        string id;
+        string itemType;
+        string extraType;
+        uint256 price;
+        address tokenAddress;
+        address receiver;
+        string nonce;
+        bytes signature;
+    }
+
     event RedeemEvent(
         address indexed user,
         string id,
@@ -142,6 +153,8 @@ contract RunnowNFTUpgradeableV2 is
     bool private _paused;
     address public mktAddress;
 
+    uint256 constant MAX_BOX = 100;
+
     modifier isBanned(address _user) {
         require(!IBlacklist(banContractAddress).isBanned(_user), "Banned");
         _;
@@ -199,7 +212,7 @@ contract RunnowNFTUpgradeableV2 is
         // Make sure that the signer is authorized to mint an item
         require(signer == operator, "Signature invalid or unauthorized");
         require(_msgSender() == data.receiver, "Wrong calller and receiver");
-        require(data.amount > 0, "Amount greater than 0");
+        require(data.amount > 0 && data.amount <= MAX_BOX, "Invalid amount");
 
         // Check nonce
         require(!_noncesMap[data.nonce], "The nonce has been used");
@@ -262,6 +275,84 @@ contract RunnowNFTUpgradeableV2 is
                         keccak256(bytes(data.extraType)),
                         data.price,
                         data.amount,
+                        data.tokenAddress,
+                        data.receiver,
+                        keccak256(bytes(data.nonce))
+                    )
+                )
+            );
+    }
+
+    function redeemOldVersion(ItemVoucherStructOld calldata data)
+        public
+        payable
+        isBanned(_msgSender())
+        whenNotPaused
+    {
+        // Make sure signature is valid and get the address of the signer
+        address signer = _verifyItemVoucherOld(data);
+        // Make sure that the signer is authorized to mint an item
+        require(signer == operator, "Signature invalid or unauthorized");
+        require(_msgSender() == data.receiver, "Wrong calller and receiver");
+
+        // Check nonce
+        require(!_noncesMap[data.nonce], "The nonce has been used");
+        _noncesMap[data.nonce] = true;
+
+        // Transfer payment
+        if (data.tokenAddress == address(0)) {
+            require(msg.value >= data.price, "Not enough money");
+            (bool success, ) = devWalletAddress.call{value: msg.value}("");
+            require(success, "Transfer payment failed");
+        } else {
+            IERC20Upgradeable(data.tokenAddress).safeTransferFrom(
+                msg.sender,
+                devWalletAddress,
+                data.price
+            );
+        }
+
+        // Mint
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+        _mint(_msgSender(), newTokenId);
+        emit RedeemEvent(
+            _msgSender(),
+            data.id,
+            data.itemType,
+            data.extraType,
+            newTokenId,
+            data.nonce,
+            data.tokenAddress,
+            uint64(block.timestamp)
+        );
+    }
+
+    function _verifyItemVoucherOld(ItemVoucherStructOld calldata data)
+        internal
+        view
+        returns (address)
+    {
+        bytes32 digest = _hashItemVoucherOld(data);
+        return ECDSAUpgradeable.recover(digest, data.signature);
+    }
+
+    function _hashItemVoucherOld(ItemVoucherStructOld calldata data)
+        internal
+        view
+        returns (bytes32)
+    {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "ItemVoucherStructOld(string id,string itemType,string extraType,uint256 price,address tokenAddress,address receiver,string nonce)"
+                        ),
+                        keccak256(bytes(data.id)),
+                        keccak256(bytes(data.itemType)),
+                        keccak256(bytes(data.extraType)),
+                        data.price,
                         data.tokenAddress,
                         data.receiver,
                         keccak256(bytes(data.nonce))
