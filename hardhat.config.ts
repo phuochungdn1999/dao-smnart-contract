@@ -27,43 +27,10 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
-    bsc: {
-      url: "https://nd-319-927-470.p2pify.com/033e3dd3880adb05a83b25e6ee8109b7",
-      gas: 6000000,
-      chainId: 56,
-      // accounts: {
-      //   mnemonic: process.env.MNEMONIC_BSC_PROD,
-      // },
-      accounts:
-        process.env.PRIVATE_KEY_MAINNET !== undefined
-          ? [process.env.PRIVATE_KEY_MAINNET]
-          : [],
-    },
-    bscTestnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+    mumbai: {
+      url: "https://polygon-mumbai.g.alchemy.com/v2/gtre32RhjQXWRjUFJ4SJfCpy4ltJrqxY",
       gas: 5000000,
-      chainId: 97,
-      // accounts: {
-      //   mnemonic: process.env.MNEMONIC_BSC,
-      // },
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    },
-    avalanche: {
-      url: "https://api.avax.network/ext/bc/C/rpc",
-      gas: 5000000,
-      chainId: 43114,
-      accounts: {
-        mnemonic: process.env.MNEMONIC_AVAX_PROD,
-      },
-    },
-    avalancheFujiTestnet: {
-      url: "https://api.avax-test.network/ext/bc/C/rpc",
-      gas: 5000000,
-      chainId: 43113,
-      // accounts: {
-      //   mnemonic: process.env.MNEMONIC_AVAX,
-      // },
+      chainId: 80001,
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
@@ -77,6 +44,9 @@ const config: HardhatUserConfig = {
         : "",
       avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY
         ? process.env.SNOWTRACE_API_KEY
+        : "",
+      polygonMumbai: process.env.MUMBAI_API_KEY
+        ? process.env.MUMBAI_API_KEY
         : "",
     },
   },
